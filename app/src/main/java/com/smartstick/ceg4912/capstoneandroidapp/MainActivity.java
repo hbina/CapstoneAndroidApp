@@ -4,13 +4,13 @@ package com.smartstick.ceg4912.capstoneandroidapp;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -18,23 +18,27 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 public class MainActivity extends Activity {
 
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
-    private TextView debugTextView;
-    private RequestQueue requestQueue;
-    private BluetoothAdapter myBluetooth = null;
+    private static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private static String bluetoothAddress = null;
+    private static BluetoothSocket bluetoothSocket = null;
+    private static boolean isBluetoothConnected = false;
+    private static RequestQueue requestQueue;
+    private static BluetoothAdapter myBluetooth = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        debugTextView = findViewById(R.id.debug_textview);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         myBluetooth = BluetoothAdapter.getDefaultAdapter();
 
@@ -46,13 +50,20 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        DisconnectBluetooth();
+    }
+
     private void pairedDevicesList() {
-        int counter = 0;
         if (myBluetooth != null) {
             Set<BluetoothDevice> pairedDevices = myBluetooth.getBondedDevices();
             if (pairedDevices.size() > 0) {
+                Log.d(this.toString(), "There are " + pairedDevices.size() + " Bluetooth devices");
                 for (BluetoothDevice bt : pairedDevices) {
-                    Log.d(this.toString(), bt.toString());
+                    Log.d(this.toString(), "bt.bluetoothAddress:" + bt.getAddress());
+                    bluetoothAddress = bt.getAddress();
                 }
             } else {
                 Log.d(this.toString(), "No paired Bluetooth devices found");
@@ -68,12 +79,12 @@ public class MainActivity extends Activity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        debugTextView.setText("Response is: " + response);
+                        Log.d(this.toString(), "Response is: " + response);
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                debugTextView.setText("" + error.getMessage());
+                Log.d(this.toString(), error.getMessage());
             }
         }) {
             @Override
@@ -92,13 +103,80 @@ public class MainActivity extends Activity {
             }
 
         };
-        Log.d(this.toString(), jsonObjRequest.toString());
+        Log.d(this.toString(), "perform request on link:" + jsonObjRequest.getUrl());
         requestQueue.add(jsonObjRequest);
+        new ConnectBT().execute();
     }
 
 
     public void onVoice(View v) {
         Log.d(this.toString(), "User have clicked onVoice");
         pairedDevicesList();
+    }
+
+    private void DisconnectBluetooth() {
+        if (bluetoothSocket != null) //If the bluetoothSocket is busy
+        {
+            try {
+                bluetoothSocket.close(); //close connection
+            } catch (IOException e) {
+                Log.e(this.toString(), e.getMessage());
+            }
+        }
+        finish();
+
+    }
+
+    private void sendStringToBluetooth(String data) {
+        if (bluetoothSocket != null) {
+            try {
+                bluetoothSocket.getOutputStream().write(data.getBytes());
+            } catch (IOException e) {
+                Log.e(this.toString(), e.getMessage());
+            }
+        }
+    }
+
+    private static class ConnectBT extends AsyncTask<Void, Void, Void> {
+        private boolean ConnectSuccess = true;
+
+        @Override
+        protected void onPreExecute() {
+            Log.d(this.toString(), "Attempting to connect to Bluetooth device...");
+        }
+
+        @Override
+        protected Void doInBackground(Void... v) {
+            if (bluetoothAddress != null) {
+                try {
+                    if (bluetoothSocket == null || !isBluetoothConnected) {
+                        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                        BluetoothDevice bluetoothDevice = bluetoothAdapter.getRemoteDevice(bluetoothAddress);//connects to the device's bluetoothAddress and checks if it's available
+                        bluetoothSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
+                        BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
+                        bluetoothSocket.connect();
+                    } else {
+                        Log.d(this.toString(), "Attempt to connect failed");
+                    }
+                } catch (IOException e) {
+                    Log.e(this.toString(), e.getMessage());
+                    ConnectSuccess = false;
+                }
+            } else {
+                Log.d(this.toString(), "Address is null!");
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void v) {
+            super.onPostExecute(v);
+            if (!ConnectSuccess) {
+                Log.d(this.toString(), "Connection Failed. Is it a SPP Bluetooth? Try again.");
+            } else {
+                Log.d(this.toString(), "Connected to Bluetooth device!");
+                isBluetoothConnected = true;
+            }
+        }
     }
 }
