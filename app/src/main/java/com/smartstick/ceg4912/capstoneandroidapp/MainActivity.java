@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
             Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnBTon, 1);
         }
+        new ConnectBT().execute();
     }
 
     @Override
@@ -105,7 +106,7 @@ public class MainActivity extends Activity {
         };
         Log.d(this.toString(), "perform request on link:" + jsonObjRequest.getUrl());
         requestQueue.add(jsonObjRequest);
-        new ConnectBT().execute();
+        sendStringToBluetooth("hello world");
     }
 
 
@@ -123,8 +124,6 @@ public class MainActivity extends Activity {
                 Log.e(this.toString(), e.getMessage());
             }
         }
-        finish();
-
     }
 
     private void sendStringToBluetooth(String data) {
@@ -151,8 +150,8 @@ public class MainActivity extends Activity {
                 try {
                     if (bluetoothSocket == null || !isBluetoothConnected) {
                         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                        BluetoothDevice bluetoothDevice = bluetoothAdapter.getRemoteDevice(bluetoothAddress);//connects to the device's bluetoothAddress and checks if it's available
-                        bluetoothSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(myUUID);//create a RFCOMM (SPP) connection
+                        BluetoothDevice bluetoothDevice = bluetoothAdapter.getRemoteDevice(bluetoothAddress);
+                        bluetoothSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(myUUID);
                         BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
                         bluetoothSocket.connect();
                     } else {
