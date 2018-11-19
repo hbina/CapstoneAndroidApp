@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -33,12 +34,14 @@ public class MainActivity extends Activity {
     private static boolean isBluetoothConnected = false;
     private static RequestQueue requestQueue;
     private static BluetoothAdapter myBluetooth = null;
+    private static TextView debugTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        debugTextView = findViewById(R.id.debug_textview);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         myBluetooth = BluetoothAdapter.getDefaultAdapter();
 
@@ -106,7 +109,7 @@ public class MainActivity extends Activity {
         };
         Log.d(this.toString(), "perform request on link:" + jsonObjRequest.getUrl());
         requestQueue.add(jsonObjRequest);
-        sendStringToBluetooth("hello world");
+        sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
     }
 
 
@@ -129,6 +132,7 @@ public class MainActivity extends Activity {
     private void sendStringToBluetooth(String data) {
         if (bluetoothSocket != null) {
             try {
+                debugTextView.setText(data);
                 bluetoothSocket.getOutputStream().write(data.getBytes());
             } catch (IOException e) {
                 Log.e(this.toString(), e.getMessage());
