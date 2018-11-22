@@ -199,29 +199,28 @@ public class MainActivity extends Activity {
     }
 
     public boolean BluetoothConnect() {
+        Log.d(this.toString(), "begin connecting to Bluetooth...");
         boolean connected = true;
         try {
             socket = device.createRfcommSocketToServiceRecord(PORT_UUID);
             socket.connect();
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.d(this.toString(), e.getMessage());
             connected = false;
         }
         if (connected) {
             try {
                 outputStream = socket.getOutputStream();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.d(this.toString(), e.getMessage());
             }
             try {
                 inputStream = socket.getInputStream();
             } catch (IOException e) {
-                e.printStackTrace();
+                Log.d(this.toString(), e.getMessage());
             }
 
         }
-
-
         return connected;
     }
 
@@ -262,8 +261,8 @@ public class MainActivity extends Activity {
     }
 
     public void beginRequest() {
+        Log.d(this.toString(), "begin request...");
         stopThread = true;
-        Log.d(this.toString(), "begin connecting to Arduino...");
         if (BluetoothInit()) {
             if (BluetoothConnect()) {
                 deviceConnected = true;
@@ -298,6 +297,7 @@ public class MainActivity extends Activity {
                                 public void run() {
                                     Log.d(this.toString(), "Received the following string:" + string);
                                     debugTextView.setText(string);
+                                    stopThread = true;
                                 }
                             });
 
