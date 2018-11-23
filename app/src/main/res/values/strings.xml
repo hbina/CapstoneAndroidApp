@@ -3,9 +3,10 @@
     <string name="voice">VOICE</string>
     <string name="sync">SYNC</string>
     <string name="debug_string">hello world</string>
-    <string name="device_cannot_support_bluetooth">Device doesnt Support Bluetooth</string>
+    <string name="device_cannot_support_bluetooth">Device doesn\'t Support Bluetooth</string>
     <string name="please_pair_device_first">Please Pair the Device first</string>
     <string name="connection_opened">\nConnection Opened!\n</string>
+    <string name="unable_to_establish_connection_with_bluetooth_device">unable to establish connection with Bluetooth device</string>
 
     <!-- TODO: Remove or change this placeholder text -->
 </resources>

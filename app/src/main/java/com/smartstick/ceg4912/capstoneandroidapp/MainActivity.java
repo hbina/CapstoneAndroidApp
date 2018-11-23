@@ -22,7 +22,6 @@ import com.android.volley.toolbox.Volley;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -41,15 +40,8 @@ public class MainActivity extends Activity {
     private static BluetoothAdapter myBluetooth = null;
     private TextView debugTextView;
     private boolean stopThread;
-    private byte[] buffer;
-    private OutputStream outputStream;
     private InputStream inputStream;
-    private final String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private BluetoothSocket socket;
-    TextView textView;
-    boolean deviceConnected = false;
-    Thread thread;
-    int bufferPosition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,6 +147,7 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Deprecated
     private static class ConnectBT extends AsyncTask<Void, Void, Void> {
         private boolean ConnectSuccess = true;
 
@@ -198,7 +191,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    public boolean BluetoothConnect() {
+    private boolean BluetoothConnect() {
         Log.d(this.toString(), "begin connecting to Bluetooth...");
         boolean connected = true;
         try {
@@ -210,11 +203,6 @@ public class MainActivity extends Activity {
         }
         if (connected) {
             try {
-                outputStream = socket.getOutputStream();
-            } catch (IOException e) {
-                Log.d(this.toString(), e.getMessage());
-            }
-            try {
                 inputStream = socket.getInputStream();
             } catch (IOException e) {
                 Log.d(this.toString(), e.getMessage());
@@ -224,7 +212,7 @@ public class MainActivity extends Activity {
         return connected;
     }
 
-    public boolean BluetoothInit() {
+    private boolean BluetoothInit() {
         Log.d(this.toString(), "initializing Bluetooth...");
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
@@ -250,6 +238,7 @@ public class MainActivity extends Activity {
             } else {
                 for (BluetoothDevice iterator : bondedDevices) {
                     Log.d(this.toString(), "found Bluetooth device with address:" + iterator.getAddress());
+                    String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
                     if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
                         device = iterator;
                         return true;
@@ -260,16 +249,16 @@ public class MainActivity extends Activity {
         }
     }
 
-    public void beginRequest() {
+    private void beginRequest() {
         Log.d(this.toString(), "begin request...");
         stopThread = true;
         if (BluetoothInit()) {
             if (BluetoothConnect()) {
-                deviceConnected = true;
                 beginListenForData();
                 debugTextView.append(getString(R.string.connection_opened));
             } else {
                 Log.d(this.toString(), "unable to establish connection with Bluetooth device...");
+                debugTextView.setText(getString(R.string.unable_to_establish_connection_with_bluetooth_device));
             }
 
         } else {
@@ -281,17 +270,16 @@ public class MainActivity extends Activity {
         Log.d(this.toString(), "Begin listening to data...");
         final Handler handler = new Handler();
         stopThread = false;
-        buffer = new byte[1024];
         Thread thread = new Thread(new Runnable() {
             public void run() {
                 Log.d(this.toString(), "Begin running thread..");
                 while (!Thread.currentThread().isInterrupted() && !stopThread) {
                     try {
-                        int byteCount = inputStream.available();
-                        if (byteCount > 0) {
+                        int howManyBytes = inputStream.available();
+                        byte[] rawBytes = new byte[howManyBytes];
+                        int checkHowManyBytes = inputStream.read(rawBytes);
+                        if (checkHowManyBytes > 0) {
                             Log.d(this.toString(), "byteCount is larger than 0");
-                            byte[] rawBytes = new byte[byteCount];
-                            inputStream.read(rawBytes);
                             final String string = new String(rawBytes, "UTF-8");
                             handler.post(new Runnable() {
                                 public void run() {
