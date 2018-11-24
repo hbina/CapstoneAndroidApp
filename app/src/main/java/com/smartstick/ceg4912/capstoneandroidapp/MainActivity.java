@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.RecognizerIntent;
@@ -24,7 +23,6 @@ import com.android.volley.toolbox.Volley;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,24 +35,15 @@ public class MainActivity extends Activity {
 
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
     private final static UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-    private final static UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
-    private BluetoothDevice device;
-    private static String bluetoothAddress = null;
     private static BluetoothSocket bluetoothSocket = null;
-    private static boolean isBluetoothConnected = false;
     private static RequestQueue requestQueue;
-    private static BluetoothAdapter myBluetooth = null;
+    private final int REQ_CODE_SPEECH_OUT = 143;
+    private BluetoothDevice device;
     private TextView debugTextView;
     private boolean stopThread;
     private InputStream inputStream;
     private BluetoothSocket socket;
-    TextView textView;
-    boolean deviceConnected = false;
-    Thread thread;
-    int bufferPosition;
-    private final int REQ_CODE_SPEECH_OUT = 143;
-    private OutputStream outputStream;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +52,7 @@ public class MainActivity extends Activity {
 
         debugTextView = findViewById(R.id.debug_textview);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
-        myBluetooth = BluetoothAdapter.getDefaultAdapter();
+        BluetoothAdapter myBluetooth = BluetoothAdapter.getDefaultAdapter();
 
         if (myBluetooth == null) {
             debugTextView.setText(getString(R.string.no_bluetooth_devices_available));
@@ -77,23 +66,6 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         DisconnectBluetooth();
-    }
-
-    private void pairedDevicesList() {
-        if (myBluetooth == null) {
-            debugTextView.setText(getString(R.string.no_bluetooth_devices_available));
-        } else {
-            Set<BluetoothDevice> pairedDevices = myBluetooth.getBondedDevices();
-            if (pairedDevices.size() > 0) {
-                debugTextView.setText(MessageFormat.format("There are {0} Bluetooth devices", pairedDevices.size()));
-                for (BluetoothDevice bt : pairedDevices) {
-                    debugTextView.setText(MessageFormat.format("bt.bluetoothAddress:{0}", bt.getAddress()));
-                    bluetoothAddress = bt.getAddress();
-                }
-            } else {
-                debugTextView.setText(getString(R.string.no_paired_bluetooth_devices_found));
-            }
-        }
     }
 
     public void onSync(View v) {
@@ -149,7 +121,7 @@ public class MainActivity extends Activity {
         try {
             startActivityForResult(intent, REQ_CODE_SPEECH_OUT);
         } catch (ActivityNotFoundException e) {
-
+            Log.d(this.toString(), e.getMessage());
         }
     }
 
@@ -158,11 +130,21 @@ public class MainActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
+            case RESULT_OK: {
+                Log.d(this.toString(), "RESULT_OK");
+                break;
+            }
+
             case REQ_CODE_SPEECH_OUT: {
-                if (requestCode == RESULT_OK && data != null) {
+                Log.d(this.toString(), "REQ_CODE_SPEECH_OUT");
+                if (data != null) {
                     ArrayList<String> voiceInText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     debugTextView.setText(voiceInText.get(0));
+                    break;
                 }
+            }
+            default: {
+                Log.d(this.toString(), "requestCode:" + requestCode);
                 break;
             }
         }
@@ -202,11 +184,6 @@ public class MainActivity extends Activity {
             connected = false;
         }
         if (connected) {
-            try {
-                outputStream = socket.getOutputStream();
-            } catch (IOException e) {
-                debugTextView.setText(e.getMessage());
-            }
             try {
                 inputStream = socket.getInputStream();
             } catch (IOException e) {
