@@ -5,10 +5,12 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -23,7 +25,10 @@ import com.android.volley.toolbox.Volley;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -50,6 +55,7 @@ public class MainActivity extends Activity {
     boolean deviceConnected = false;
     Thread thread;
     int bufferPosition;
+    private final int REQ_CODE_SPEECH_OUT = 143;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +67,7 @@ public class MainActivity extends Activity {
         myBluetooth = BluetoothAdapter.getDefaultAdapter();
 
         if (myBluetooth == null) {
-            Log.d(this.toString(), "No Bluetooth devices available");
+            debugTextView.setText(getString(R.string.no_bluetooth_devices_available));
         } else if (!myBluetooth.isEnabled()) {
             Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnBTon, 1);
@@ -75,34 +81,34 @@ public class MainActivity extends Activity {
     }
 
     private void pairedDevicesList() {
-        if (myBluetooth != null) {
+        if (myBluetooth == null) {
+            debugTextView.setText(getString(R.string.no_bluetooth_devices_available));
+        } else {
             Set<BluetoothDevice> pairedDevices = myBluetooth.getBondedDevices();
             if (pairedDevices.size() > 0) {
-                Log.d(this.toString(), "There are " + pairedDevices.size() + " Bluetooth devices");
+                debugTextView.setText(MessageFormat.format("There are {0} Bluetooth devices", pairedDevices.size()));
                 for (BluetoothDevice bt : pairedDevices) {
-                    Log.d(this.toString(), "bt.bluetoothAddress:" + bt.getAddress());
+                    debugTextView.setText(MessageFormat.format("bt.bluetoothAddress:{0}", bt.getAddress()));
                     bluetoothAddress = bt.getAddress();
                 }
             } else {
-                Log.d(this.toString(), "No paired Bluetooth devices found");
+                debugTextView.setText(getString(R.string.no_paired_bluetooth_devices_found));
             }
-        } else {
-            Log.d(this.toString(), "No Bluetooth devices available");
         }
     }
 
     public void onSync(View v) {
-        Log.d(this.toString(), "User have clicked onSync");
+        debugTextView.setText(getString(R.string.user_clicked_onsync));
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d(this.toString(), "Response is: " + response);
+                        debugTextView.setText(MessageFormat.format("Response is: {0}", response));
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d(this.toString(), error.getMessage());
+                debugTextView.setText(error.getMessage());
             }
         }) {
             @Override
@@ -121,7 +127,7 @@ public class MainActivity extends Activity {
             }
 
         };
-        Log.d(this.toString(), "perform request on link:" + jsonObjRequest.getUrl());
+        debugTextView.setText(MessageFormat.format("perform request on link:{0}", jsonObjRequest.getUrl()));
         requestQueue.add(jsonObjRequest);
         sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
         beginRequest();
@@ -129,8 +135,38 @@ public class MainActivity extends Activity {
 
 
     public void onVoice(View v) {
-        Log.d(this.toString(), "User have clicked onVoice");
-        pairedDevicesList();
+        debugTextView.setText(getString(R.string.user_clicked_onvoice));
+        btnToOpenMic();
+    }
+
+
+    private void btnToOpenMic() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, R.string.please_enter_the_destination);
+
+        try {
+            startActivityForResult(intent, REQ_CODE_SPEECH_OUT);
+        } catch (ActivityNotFoundException e) {
+
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQ_CODE_SPEECH_OUT: {
+                if (requestCode == RESULT_OK && data != null) {
+                    ArrayList<String> voiceInText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    debugTextView.setText(voiceInText.get(0));
+                }
+                break;
+            }
+        }
     }
 
     private void DisconnectBluetooth() {
@@ -155,69 +191,26 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static class ConnectBT extends AsyncTask<Void, Void, Void> {
-        private boolean ConnectSuccess = true;
-
-        @Override
-        protected void onPreExecute() {
-            Log.d(this.toString(), "Attempting to connect to Bluetooth device...");
-        }
-
-        @Override
-        protected Void doInBackground(Void... v) {
-            if (bluetoothAddress != null) {
-                try {
-                    if (bluetoothSocket == null || !isBluetoothConnected) {
-                        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                        BluetoothDevice bluetoothDevice = bluetoothAdapter.getRemoteDevice(bluetoothAddress);
-                        bluetoothSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(myUUID);
-                        BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
-                        bluetoothSocket.connect();
-                    } else {
-                        Log.d(this.toString(), "Attempt to connect failed");
-                    }
-                } catch (IOException e) {
-                    Log.e(this.toString(), e.getMessage());
-                    ConnectSuccess = false;
-                }
-            } else {
-                Log.d(this.toString(), "Address is null!");
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void v) {
-            super.onPostExecute(v);
-            if (!ConnectSuccess) {
-                Log.d(this.toString(), "Connection Failed. Is it a SPP Bluetooth? Try again.");
-            } else {
-                Log.d(this.toString(), "Connected to Bluetooth device!");
-                isBluetoothConnected = true;
-            }
-        }
-    }
-
     public boolean BluetoothConnect() {
-        Log.d(this.toString(), "begin connecting to Bluetooth...");
+        debugTextView.setText(getString(R.string.begin_connecting_to_bluetooth));
         boolean connected = true;
         try {
             socket = device.createRfcommSocketToServiceRecord(PORT_UUID);
             socket.connect();
         } catch (IOException e) {
-            Log.d(this.toString(), e.getMessage());
+            debugTextView.setText(e.getMessage());
             connected = false;
         }
         if (connected) {
             try {
                 outputStream = socket.getOutputStream();
             } catch (IOException e) {
-                Log.d(this.toString(), e.getMessage());
+                debugTextView.setText(e.getMessage());
             }
             try {
                 inputStream = socket.getInputStream();
             } catch (IOException e) {
-                Log.d(this.toString(), e.getMessage());
+                debugTextView.setText(e.getMessage());
             }
 
         }
@@ -225,16 +218,15 @@ public class MainActivity extends Activity {
     }
 
     public boolean BluetoothInit() {
-        Log.d(this.toString(), "initializing Bluetooth...");
+        debugTextView.setText(getString(R.string.bluetooth_initialize));
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            Log.d(this.toString(), "device cannot open Bluetooth...");
-            debugTextView.setText(getString(R.string.device_cannot_support_bluetooth));
+            debugTextView.setText(getString(R.string.device_cannot_open_bluetooth));
             return false;
         } else {
-            Log.d(this.toString(), "device have opened a Bluetooth...");
+            debugTextView.setText(getString(R.string.device_cannot_open_bluetooth));
             if (!bluetoothAdapter.isEnabled()) {
-                Log.d(this.toString(), "Bluetooth is not enabled! Requesting permission to enable now...");
+                debugTextView.setText(getString(R.string.bluetooth_is_not_enabled));
                 Intent enableAdapter = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableAdapter, 0);
                 try {
@@ -245,11 +237,10 @@ public class MainActivity extends Activity {
             }
             Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
             if (bondedDevices.isEmpty()) {
-                Log.d(this.toString(), "no connected Bluetooth devices found...");
-                debugTextView.setText(getString(R.string.please_pair_device_first));
+                debugTextView.setText(getString(R.string.no_bluetooth_devices_found));
             } else {
                 for (BluetoothDevice iterator : bondedDevices) {
-                    Log.d(this.toString(), "found Bluetooth device with address:" + iterator.getAddress());
+                    debugTextView.setText(MessageFormat.format("found Bluetooth device with address:{0}", iterator.getAddress()));
                     if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
                         device = iterator;
                         return true;
@@ -261,7 +252,7 @@ public class MainActivity extends Activity {
     }
 
     public void beginRequest() {
-        Log.d(this.toString(), "begin request...");
+        debugTextView.setText(getString(R.string.begin_request));
         stopThread = true;
         if (BluetoothInit()) {
             if (BluetoothConnect()) {
@@ -269,33 +260,31 @@ public class MainActivity extends Activity {
                 beginListenForData();
                 debugTextView.append(getString(R.string.connection_opened));
             } else {
-                Log.d(this.toString(), "unable to establish connection with Bluetooth device...");
+                debugTextView.setText(getString(R.string.unable_to_establish_connection_with_bluetooth_device));
             }
 
         } else {
-            Log.d(this.toString(), "fail to initialize Bluetooth...");
+            debugTextView.setText(getString(R.string.fail_to_initialize_bluetooth));
         }
     }
 
     private void beginListenForData() {
-        Log.d(this.toString(), "Begin listening to data...");
+        debugTextView.setText(getString(R.string.begin_listening_to_data));
         final Handler handler = new Handler();
         stopThread = false;
         buffer = new byte[1024];
         Thread thread = new Thread(new Runnable() {
             public void run() {
-                Log.d(this.toString(), "Begin running thread..");
+                debugTextView.setText(getString(R.string.begin_running_thread));
                 while (!Thread.currentThread().isInterrupted() && !stopThread) {
                     try {
                         int byteCount = inputStream.available();
                         if (byteCount > 0) {
-                            Log.d(this.toString(), "byteCount is larger than 0");
                             byte[] rawBytes = new byte[byteCount];
                             inputStream.read(rawBytes);
                             final String string = new String(rawBytes, "UTF-8");
                             handler.post(new Runnable() {
                                 public void run() {
-                                    Log.d(this.toString(), "Received the following string:" + string);
                                     debugTextView.setText(string);
                                     stopThread = true;
                                 }
@@ -303,7 +292,7 @@ public class MainActivity extends Activity {
 
                         }
                     } catch (IOException ex) {
-                        Log.d(this.toString(), "error:" + ex.getMessage());
+                        debugTextView.setText(MessageFormat.format("error:{0}", ex.getMessage()));
                         stopThread = true;
                     }
                 }
