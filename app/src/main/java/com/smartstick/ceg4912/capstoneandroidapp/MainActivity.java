@@ -37,7 +37,8 @@ public class MainActivity extends Activity {
 
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
     private final static UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
-    private static final UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private final static UUID myUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private BluetoothDevice device;
     private static String bluetoothAddress = null;
     private static BluetoothSocket bluetoothSocket = null;
@@ -46,16 +47,14 @@ public class MainActivity extends Activity {
     private static BluetoothAdapter myBluetooth = null;
     private TextView debugTextView;
     private boolean stopThread;
-    private byte[] buffer;
-    private OutputStream outputStream;
     private InputStream inputStream;
-    private final String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private BluetoothSocket socket;
     TextView textView;
     boolean deviceConnected = false;
     Thread thread;
     int bufferPosition;
     private final int REQ_CODE_SPEECH_OUT = 143;
+    private OutputStream outputStream;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -193,6 +192,7 @@ public class MainActivity extends Activity {
 
     public boolean BluetoothConnect() {
         debugTextView.setText(getString(R.string.begin_connecting_to_bluetooth));
+
         boolean connected = true;
         try {
             socket = device.createRfcommSocketToServiceRecord(PORT_UUID);
@@ -256,7 +256,6 @@ public class MainActivity extends Activity {
         stopThread = true;
         if (BluetoothInit()) {
             if (BluetoothConnect()) {
-                deviceConnected = true;
                 beginListenForData();
                 debugTextView.append(getString(R.string.connection_opened));
             } else {
@@ -272,7 +271,6 @@ public class MainActivity extends Activity {
         debugTextView.setText(getString(R.string.begin_listening_to_data));
         final Handler handler = new Handler();
         stopThread = false;
-        buffer = new byte[1024];
         Thread thread = new Thread(new Runnable() {
             public void run() {
                 debugTextView.setText(getString(R.string.begin_running_thread));
