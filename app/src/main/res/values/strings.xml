@@ -3,11 +3,8 @@
     <string name="voice">VOICE</string>
     <string name="sync">SYNC</string>
     <string name="debug_string">hello world</string>
-    <string name="device_cannot_support_bluetooth">Device doesn\'t Support Bluetooth</string>
-    <string name="please_pair_device_first">Please Pair the Device first</string>
     <string name="connection_opened">\nConnection Opened!\n</string>
     <string name="no_bluetooth_devices_available">No Bluetooth devices available</string>
-    <string name="no_paired_bluetooth_devices_found">No paired Bluetooth devices found</string>
     <string name="user_clicked_onsync">User have clicked onSync</string>
     <string name="user_clicked_onvoice">User have clicked onVoice</string>
     <string name="please_enter_the_destination">Please Enter the Destination</string>
@@ -21,4 +18,6 @@
     <string name="begin_listening_to_data">Begin listening to data…</string>
     <string name="begin_running_thread">Begin running thread..</string>
     <string name="bluetooth_is_not_enabled">Bluetooth is not enabled! Requesting permission to enable now…</string>
+    <string name="already_connected">already connected, perhaps vibrate it??</string>
+    <string name="resumed_from">resumed from</string>
 </resources>

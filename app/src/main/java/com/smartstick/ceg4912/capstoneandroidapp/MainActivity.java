@@ -38,6 +38,10 @@ public class MainActivity extends Activity {
     private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private static BluetoothSocket bluetoothSocket = null;
     private static RequestQueue requestQueue;
+    private static boolean isConnectedToBluetooth = false;
+    private static String oldString = "";
+    private static Thread thread;
+    private static int rawBytesLength = 0;
     private final int REQ_CODE_SPEECH_OUT = 143;
     private BluetoothDevice device;
     private TextView debugTextView;
@@ -49,7 +53,11 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
         debugTextView = findViewById(R.id.debug_textview);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         BluetoothAdapter myBluetooth = BluetoothAdapter.getDefaultAdapter();
@@ -60,6 +68,7 @@ public class MainActivity extends Activity {
             Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnBTon, 1);
         }
+        debugTextView.setText(R.string.resumed_from);
     }
 
     @Override
@@ -70,38 +79,7 @@ public class MainActivity extends Activity {
 
     public void onSync(View v) {
         debugTextView.setText(getString(R.string.user_clicked_onsync));
-        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        debugTextView.setText(MessageFormat.format("Response is: {0}", response));
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                debugTextView.setText(error.getMessage());
-            }
-        }) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> pars = new HashMap<>();
-                pars.put("Content-Type", "application/x-www-form-urlencoded");
-                return pars;
-            }
-
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("from", "A");
-                params.put("to", "Freedom");
-                return params;
-            }
-
-        };
-        debugTextView.setText(MessageFormat.format("perform request on link:{0}", jsonObjRequest.getUrl()));
-        requestQueue.add(jsonObjRequest);
-        sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
-        beginRequest();
+        beginBluetoothSync();
     }
 
 
@@ -110,7 +88,9 @@ public class MainActivity extends Activity {
         btnToOpenMic();
     }
 
-
+    /*
+    Voice Control
+     */
     private void btnToOpenMic() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -150,51 +130,29 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void DisconnectBluetooth() {
-        if (bluetoothSocket != null) //If the bluetoothSocket is busy
-        {
-            try {
-                bluetoothSocket.close(); //close connection
-            } catch (IOException e) {
-                Log.e(this.toString(), e.getMessage());
+    /*
+    Bluetooth Connection
+     */
+    public void beginBluetoothSync() {
+        debugTextView.setText(getString(R.string.begin_request));
+        if (!isConnectedToBluetooth) {
+            if (initializeBluetooth()) {
+                if (connectWithBluetooth()) {
+                    isConnectedToBluetooth = true;
+                    beginListenForData();
+                    debugTextView.append(getString(R.string.connection_opened));
+                } else {
+                    debugTextView.setText(getString(R.string.unable_to_establish_connection_with_bluetooth_device));
+                }
+            } else {
+                debugTextView.setText(getString(R.string.fail_to_initialize_bluetooth));
             }
+        } else {
+            debugTextView.setText(R.string.already_connected);
         }
     }
 
-    private void sendStringToBluetooth(String data) {
-        if (bluetoothSocket != null) {
-            try {
-                debugTextView.setText(data);
-                bluetoothSocket.getOutputStream().write(data.getBytes());
-            } catch (IOException e) {
-                Log.e(this.toString(), e.getMessage());
-            }
-        }
-    }
-
-    public boolean BluetoothConnect() {
-        debugTextView.setText(getString(R.string.begin_connecting_to_bluetooth));
-
-        boolean connected = true;
-        try {
-            socket = device.createRfcommSocketToServiceRecord(PORT_UUID);
-            socket.connect();
-        } catch (IOException e) {
-            debugTextView.setText(e.getMessage());
-            connected = false;
-        }
-        if (connected) {
-            try {
-                inputStream = socket.getInputStream();
-            } catch (IOException e) {
-                debugTextView.setText(e.getMessage());
-            }
-
-        }
-        return connected;
-    }
-
-    public boolean BluetoothInit() {
+    public boolean initializeBluetooth() {
         debugTextView.setText(getString(R.string.bluetooth_initialize));
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
@@ -228,27 +186,33 @@ public class MainActivity extends Activity {
         }
     }
 
-    public void beginRequest() {
-        debugTextView.setText(getString(R.string.begin_request));
-        stopThread = true;
-        if (BluetoothInit()) {
-            if (BluetoothConnect()) {
-                beginListenForData();
-                debugTextView.append(getString(R.string.connection_opened));
-            } else {
-                debugTextView.setText(getString(R.string.unable_to_establish_connection_with_bluetooth_device));
+    public boolean connectWithBluetooth() {
+        debugTextView.setText(getString(R.string.begin_connecting_to_bluetooth));
+
+        boolean connected = true;
+        try {
+            socket = device.createRfcommSocketToServiceRecord(PORT_UUID);
+            socket.connect();
+        } catch (IOException e) {
+            debugTextView.setText(e.getMessage());
+            connected = false;
+        }
+        if (connected) {
+            try {
+                inputStream = socket.getInputStream();
+            } catch (IOException e) {
+                debugTextView.setText(e.getMessage());
             }
 
-        } else {
-            debugTextView.setText(getString(R.string.fail_to_initialize_bluetooth));
         }
+        return connected;
     }
 
     private void beginListenForData() {
         debugTextView.setText(getString(R.string.begin_listening_to_data));
         final Handler handler = new Handler();
         stopThread = false;
-        Thread thread = new Thread(new Runnable() {
+        thread = new Thread(new Runnable() {
             public void run() {
                 debugTextView.setText(getString(R.string.begin_running_thread));
                 while (!Thread.currentThread().isInterrupted() && !stopThread) {
@@ -256,23 +220,84 @@ public class MainActivity extends Activity {
                         int byteCount = inputStream.available();
                         if (byteCount > 0) {
                             byte[] rawBytes = new byte[byteCount];
-                            inputStream.read(rawBytes);
+                            rawBytesLength = inputStream.read(rawBytes);
                             final String string = new String(rawBytes, "UTF-8");
                             handler.post(new Runnable() {
                                 public void run() {
-                                    debugTextView.setText(string);
-                                    stopThread = true;
+                                    if (!oldString.equals(string)) {
+                                        debugTextView.setText(MessageFormat.format("received string of length:\n{0} containing:\n{1}", rawBytesLength, string));
+                                        oldString = string;
+                                    }
                                 }
                             });
 
                         }
                     } catch (IOException ex) {
                         debugTextView.setText(MessageFormat.format("error:{0}", ex.getMessage()));
-                        stopThread = true;
                     }
                 }
             }
         });
         thread.start();
+    }
+
+    private void DisconnectBluetooth() {
+        isConnectedToBluetooth = false;
+        if (bluetoothSocket != null) //If the bluetoothSocket is busy
+        {
+            try {
+                bluetoothSocket.close(); //close connection
+            } catch (IOException e) {
+                Log.e(this.toString(), e.getMessage());
+            }
+        }
+    }
+
+    private void sendStringToBluetooth(String data) {
+        if (bluetoothSocket != null) {
+            try {
+                debugTextView.setText(data);
+                bluetoothSocket.getOutputStream().write(data.getBytes());
+            } catch (IOException e) {
+                Log.e(this.toString(), e.getMessage());
+            }
+        }
+    }
+
+    /*
+    Database queries
+     */
+    private void getDirectionFromDb() {
+        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        debugTextView.setText(MessageFormat.format("Response is: {0}", response));
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                debugTextView.setText(error.getMessage());
+            }
+        }) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> pars = new HashMap<>();
+                pars.put("Content-Type", "application/x-www-form-urlencoded");
+                return pars;
+            }
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("from", "A");
+                params.put("to", "Freedom");
+                return params;
+            }
+
+        };
+        debugTextView.setText(MessageFormat.format("perform request on link:{0}", jsonObjRequest.getUrl()));
+        requestQueue.add(jsonObjRequest);
+        sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
     }
 }
