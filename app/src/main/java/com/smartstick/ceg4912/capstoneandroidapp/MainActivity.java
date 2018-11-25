@@ -7,9 +7,11 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -42,18 +44,30 @@ public class MainActivity extends Activity {
     private static boolean isConnectedToBluetooth = false;
     private static String oldString = "";
     private static Thread thread;
-    private static int rawBytesLength = 0;
     private static int byteCount = 0;
     private static BluetoothDevice device;
     private static boolean stopThread;
     private static InputStream inputStream;
     private static BluetoothSocket socket;
+    private static BluetoothAdapter bluetoothAdapter;
     private TextView debugTextView;
+    private TextToSpeech textToSpeech;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status != TextToSpeech.ERROR) {
+                    textToSpeech.setLanguage(Locale.US);
+                } else {
+                    Log.d(this.toString(), "Failed to initialize textToSpeech with status:" + status);
+                }
+            }
+        });
     }
 
     @Override
@@ -61,15 +75,23 @@ public class MainActivity extends Activity {
         super.onResume();
         debugTextView = findViewById(R.id.debug_textview);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
-        BluetoothAdapter myBluetooth = BluetoothAdapter.getDefaultAdapter();
-
-        if (myBluetooth == null) {
-            debugTextView.setText(getString(R.string.no_bluetooth_devices_available));
-        } else if (!myBluetooth.isEnabled()) {
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null) {
+            Log.d(this.toString(), "bluetoothAdapter is null");
+        }
+        if (!bluetoothAdapter.isEnabled()) {
+            Log.d(this.toString(), "bluetoothAdapter is not enabled...Requesting permission to enable");
             Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(turnBTon, 1);
         }
-        debugTextView.setText(R.string.resumed_from);
+
+        if (thread == null) {
+            Log.d(this.toString(), "thread is null");
+        } else if (thread.isAlive()) {
+            Log.d(this.toString(), "thread is still alive");
+        } else {
+            Log.d(this.toString(), "thread have been killed");
+        }
     }
 
     @Override
@@ -109,7 +131,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
         switch (requestCode) {
             case RESULT_OK: {
                 Log.d(this.toString(), "RESULT_OK");
@@ -120,9 +141,14 @@ public class MainActivity extends Activity {
                 Log.d(this.toString(), "REQ_CODE_SPEECH_OUT");
                 if (data != null) {
                     ArrayList<String> voiceInText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    debugTextView.setText(voiceInText.get(0));
-                    break;
+                    debugTextView.setText(getString(R.string.recevied_the_following_text));
+                    for (int voicesIndex = 0; voicesIndex < voiceInText.size(); voicesIndex++) {
+                        textToSpeech.speak(voiceInText.get(voicesIndex), TextToSpeech.QUEUE_FLUSH, null, null);
+                        Log.d(this.toString(), voicesIndex + ". " + voiceInText.get(voicesIndex));
+                        debugTextView.append("\n" + voicesIndex + ". " + voiceInText.get(voicesIndex));
+                    }
                 }
+                break;
             }
             default: {
                 Log.d(this.toString(), "requestCode:" + requestCode);
@@ -135,34 +161,22 @@ public class MainActivity extends Activity {
     Bluetooth Connection
      */
     public void beginBluetoothSync() {
-        debugTextView.setText(getString(R.string.begin_request));
-        if (!isConnectedToBluetooth) {
-            if (initializeBluetooth()) {
-                if (connectWithBluetooth()) {
-                    isConnectedToBluetooth = true;
-                    beginListenForData();
-                    debugTextView.append(getString(R.string.connection_opened));
-                } else {
-                    debugTextView.setText(getString(R.string.unable_to_establish_connection_with_bluetooth_device));
-                }
-            } else {
-                debugTextView.setText(getString(R.string.fail_to_initialize_bluetooth));
-            }
+        if (!isConnectedToBluetooth && initializeBluetooth() && connectWithBluetooth()) {
+            isConnectedToBluetooth = true;
+            beginListenForData();
         } else {
-            debugTextView.setText(R.string.already_connected);
+            Log.d(this.toString(), "Unable to sync with Bluetooth device");
         }
     }
 
     public boolean initializeBluetooth() {
-        debugTextView.setText(getString(R.string.bluetooth_initialize));
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            debugTextView.setText(getString(R.string.device_cannot_open_bluetooth));
+            Log.d(this.toString(), "bluetoothAdapter is null");
             return false;
         } else {
-            debugTextView.setText(getString(R.string.device_cannot_open_bluetooth));
             if (!bluetoothAdapter.isEnabled()) {
-                debugTextView.setText(getString(R.string.bluetooth_is_not_enabled));
+                Log.d(this.toString(), "bluetoothAdapter is not enabled");
                 Intent enableAdapter = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableAdapter, 0);
                 try {
@@ -171,12 +185,11 @@ public class MainActivity extends Activity {
                     e.printStackTrace();
                 }
             }
-            Set<BluetoothDevice> bondedDevices = bluetoothAdapter.getBondedDevices();
-            if (bondedDevices.isEmpty()) {
-                debugTextView.setText(getString(R.string.no_bluetooth_devices_found));
+            Set<BluetoothDevice> connectedDevices = bluetoothAdapter.getBondedDevices();
+            if (connectedDevices.isEmpty()) {
+                Log.d(this.toString(), "no bluetooth device connected");
             } else {
-                for (BluetoothDevice iterator : bondedDevices) {
-                    debugTextView.setText(MessageFormat.format("found Bluetooth device with address:{0}", iterator.getAddress()));
+                for (BluetoothDevice iterator : connectedDevices) {
                     if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
                         device = iterator;
                         return true;
@@ -188,21 +201,19 @@ public class MainActivity extends Activity {
     }
 
     public boolean connectWithBluetooth() {
-        debugTextView.setText(getString(R.string.begin_connecting_to_bluetooth));
-
         boolean connected = true;
         try {
             socket = device.createRfcommSocketToServiceRecord(PORT_UUID);
             socket.connect();
         } catch (IOException e) {
-            debugTextView.setText(e.getMessage());
+
             connected = false;
         }
         if (connected) {
             try {
                 inputStream = socket.getInputStream();
             } catch (IOException e) {
-                debugTextView.setText(e.getMessage());
+                Log.e(this.toString(), e.getMessage());
             }
 
         }
@@ -215,26 +226,26 @@ public class MainActivity extends Activity {
         stopThread = false;
         thread = new Thread(new Runnable() {
             public void run() {
-                debugTextView.setText(getString(R.string.begin_running_thread));
+
                 while (!Thread.currentThread().isInterrupted() && !stopThread) {
                     try {
                         byteCount = inputStream.available();
                         if (byteCount > 0) {
                             byte[] rawBytes = new byte[byteCount];
-                            rawBytesLength = inputStream.read(rawBytes);
-                            final String string = new String(rawBytes, "UTF-8");
+                            inputStream.read(rawBytes);
+                            final String receivedString = new String(rawBytes, "UTF-8");
                             handler.post(new Runnable() {
                                 public void run() {
-                                    if (!oldString.equals(string)) {
-                                        debugTextView.setText(MessageFormat.format("received string of byteCount:{0}\nrawBytesLength:{1}\ncontaining:{2}", byteCount, rawBytesLength, string));
-                                        oldString = string;
+                                    if (!oldString.equals(receivedString)) {
+                                        oldString = receivedString;
+                                        debugTextView.setText(receivedString);
                                     }
                                 }
                             });
 
                         }
                     } catch (IOException ex) {
-                        debugTextView.setText(MessageFormat.format("error:{0}", ex.getMessage()));
+                        Log.e(this.toString(), ex.getMessage());
                     }
                 }
             }
@@ -257,7 +268,6 @@ public class MainActivity extends Activity {
     private void sendStringToBluetooth(String data) {
         if (bluetoothSocket != null) {
             try {
-                debugTextView.setText(data);
                 bluetoothSocket.getOutputStream().write(data.getBytes());
             } catch (IOException e) {
                 Log.e(this.toString(), e.getMessage());
@@ -273,12 +283,12 @@ public class MainActivity extends Activity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        debugTextView.setText(MessageFormat.format("Response is: {0}", response));
+                        Log.d(this.toString(), "received a response from server:" + response);
                     }
                 }, new Response.ErrorListener() {
             @Override
-            public void onErrorResponse(VolleyError error) {
-                debugTextView.setText(error.getMessage());
+            public void onErrorResponse(VolleyError e) {
+                Log.d(this.toString(), e.getMessage());
             }
         }) {
             @Override
@@ -297,7 +307,7 @@ public class MainActivity extends Activity {
             }
 
         };
-        debugTextView.setText(MessageFormat.format("perform request on link:{0}", jsonObjRequest.getUrl()));
+        debugTextView.setText(MessageFormat.format("performing request on link:{0}", jsonObjRequest.getUrl()));
         requestQueue.add(jsonObjRequest);
         sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
     }

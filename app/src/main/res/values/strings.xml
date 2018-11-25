@@ -20,4 +20,5 @@
     <string name="bluetooth_is_not_enabled">Bluetooth is not enabled! Requesting permission to enable now…</string>
     <string name="already_connected">already connected, perhaps vibrate it??</string>
     <string name="resumed_from">resumed from</string>
+    <string name="recevied_the_following_text">received the following text:</string>
 </resources>
