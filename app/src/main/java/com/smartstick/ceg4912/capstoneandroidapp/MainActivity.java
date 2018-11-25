@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
     private static Thread thread;
     private static int byteCount = 0;
     private static BluetoothDevice device;
-    private static boolean stopThread;
+    private static volatile boolean stopThread;
     private static InputStream inputStream;
     private static BluetoothSocket socket;
     private static BluetoothAdapter bluetoothAdapter;
@@ -244,10 +244,11 @@ public class MainActivity extends Activity {
                             });
 
                         }
-                    } catch (IOException ex) {
-                        Log.e(this.toString(), ex.getMessage());
+                    } catch (IOException e) {
+                        Log.e(this.toString(), e.getMessage());
                     }
                 }
+                Log.d(this.toString(), "thread have finished running");
             }
         });
         thread.start();
