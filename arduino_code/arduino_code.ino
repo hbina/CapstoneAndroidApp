@@ -11,7 +11,7 @@ SoftwareSerial BTserial(6, 7); // RX | TX
 #define RST_PIN 9
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 int counter = 1;
-byte key[4] = {0, 0, 0, 0};
+byte key[5] = {100, 100, 100, 100};
 void setup()
 {
   pinMode(3, OUTPUT);
@@ -51,9 +51,9 @@ void loop()
         Serial.print("\n");
         for (byte i = 0; i < mfrc522.uid.size; i++)
         {
-          key[i] = mfrc522.uid.uidByte[i];
-          Serial.print(key[i], HEX);
-          BTserial.print(key[i], HEX);
+            key[i] = mfrc522.uid.uidByte[i];
+            Serial.print(key[i], HEX);
+            BTserial.print(key[i], HEX);
         }
         Serial.print(" no.");
         Serial.print(counter++);

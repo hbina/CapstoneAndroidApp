@@ -36,18 +36,19 @@ public class MainActivity extends Activity {
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
     private final static UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
+    private final static int REQ_CODE_SPEECH_OUT = 143;
     private static BluetoothSocket bluetoothSocket = null;
     private static RequestQueue requestQueue;
     private static boolean isConnectedToBluetooth = false;
     private static String oldString = "";
     private static Thread thread;
     private static int rawBytesLength = 0;
-    private final int REQ_CODE_SPEECH_OUT = 143;
-    private BluetoothDevice device;
+    private static int byteCount = 0;
+    private static BluetoothDevice device;
+    private static boolean stopThread;
+    private static InputStream inputStream;
+    private static BluetoothSocket socket;
     private TextView debugTextView;
-    private boolean stopThread;
-    private InputStream inputStream;
-    private BluetoothSocket socket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -217,7 +218,7 @@ public class MainActivity extends Activity {
                 debugTextView.setText(getString(R.string.begin_running_thread));
                 while (!Thread.currentThread().isInterrupted() && !stopThread) {
                     try {
-                        int byteCount = inputStream.available();
+                        byteCount = inputStream.available();
                         if (byteCount > 0) {
                             byte[] rawBytes = new byte[byteCount];
                             rawBytesLength = inputStream.read(rawBytes);
@@ -225,7 +226,7 @@ public class MainActivity extends Activity {
                             handler.post(new Runnable() {
                                 public void run() {
                                     if (!oldString.equals(string)) {
-                                        debugTextView.setText(MessageFormat.format("received string of length:\n{0} containing:\n{1}", rawBytesLength, string));
+                                        debugTextView.setText(MessageFormat.format("received string of byteCount:{0}\nrawBytesLength:{1}\ncontaining:{2}", byteCount, rawBytesLength, string));
                                         oldString = string;
                                     }
                                 }
