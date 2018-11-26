@@ -22,4 +22,12 @@
     <string name="resumed_from">resumed from</string>
     <string name="recevied_the_following_text">received the following text:</string>
     <string name="device_does_not_support_bluetooth">Device does not support Bluetooth</string>
+    <string name="http_request_api_param_from">from</string>
+    <string name="http_request_api_param_to">to</string>
+    <string name="ERROR_MESSAGE_DEVICE_DOES_NOT_SUPPORT_BLUETOOTH">Device does not support Bluetooth.</string>
+    <string name="ERROR_MESSAGE_DEVICE_ALREADY_CONNECTED_TO_BLUETOOTH">Device already connected to Bluetooth!</string>
+    <string name="ERROR_MESSAGE_UNABLE_TO_CONNECT_TO_SOCKET_WITH_PORT_ID">Unable to connect to socket with port UUID of {0}.</string>
+    <string name="ERROR_MESSAGE_UNABLE_GET_BLUETOOTH_SOCKET_INPUT_STREAM">Unable to get Bluetooth socket input stream.</string>
+    <string name="ERROR_MESSAGE_BLUETOOTH_IS_NOT_ENABLED">Bluetooth is not enabled. Asking permission to enable now.</string>
+    <string name="ERROR_MESSAGE_NO_BLUETOOTH_DEVICE_CONNECTED">No Bluetooth device connected.</string>
 </resources>
