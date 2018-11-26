@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.RecognizerIntent;
@@ -15,6 +14,7 @@ import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -78,19 +78,22 @@ public class MainActivity extends Activity {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             Log.d(this.toString(), "bluetoothAdapter is null");
-        }
-        if (!bluetoothAdapter.isEnabled()) {
-            Log.d(this.toString(), "bluetoothAdapter is not enabled...Requesting permission to enable");
-            Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(turnBTon, 1);
-        }
-
-        if (thread == null) {
-            Log.d(this.toString(), "thread is null");
-        } else if (thread.isAlive()) {
-            Log.d(this.toString(), "thread is still alive");
+            Toast.makeText(getApplicationContext(), getString(R.string.device_does_not_support_bluetooth), Toast.LENGTH_LONG).show();
+            finish();
         } else {
-            Log.d(this.toString(), "thread have been killed");
+            if (!bluetoothAdapter.isEnabled()) {
+                Log.d(this.toString(), "bluetoothAdapter is not enabled...Requesting permission to enable");
+                Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(turnBTon, 1);
+            }
+
+            if (thread == null) {
+                Log.d(this.toString(), "thread is null");
+            } else if (thread.isAlive()) {
+                Log.d(this.toString(), "thread is still alive");
+            } else {
+                Log.d(this.toString(), "thread have been killed");
+            }
         }
     }
 
