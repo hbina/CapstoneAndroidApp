@@ -29,25 +29,13 @@ void loop()
   // Look for new cards
   if ( ! mfrc522.PICC_IsNewCardPresent())
   {
-    if (!reached) {
-      Serial.println("hello1");
-      reached = true;
-    }
     return;
   } else {
     // Select one of the cards
     if ( ! mfrc522.PICC_ReadCardSerial())
     {
-      if (!reached) {
-        Serial.println("hello2");
-        reached = true;
-      }
       return;
     } else {
-      if (!reached) {
-        Serial.println("hello3");
-        reached = true;
-      }
       String content = "";
       byte letter;
       boolean someBool = false;

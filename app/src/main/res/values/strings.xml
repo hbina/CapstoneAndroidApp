@@ -33,4 +33,5 @@
     <string name="DATA_WAS_NULL">Data was null</string>
     <string name="YOU_HAVE_PRESSED_THE_SYNC_BUTTON">You have pressed to sync.</string>
     <string name="CONNECTION_TO_BLUETOOTH_DEVICE_SUCCESSFULL">Connection to the Bluetooth device succesfull!.</string>
+    <string name="BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW">bluetoothAdapter is not enabled...Requesting permission to enable</string>
 </resources>

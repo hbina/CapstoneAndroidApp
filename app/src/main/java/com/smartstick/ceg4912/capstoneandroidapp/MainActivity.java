@@ -23,6 +23,10 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.MessageFormat;
@@ -36,9 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainActivity extends Activity {
 
-    public static final int MY_PERMISSIONS_REQUEST_CAMERA = 130;
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
-    //private final static String SMART_STICK_URL = "https://www.google.com";
     private static final UUID BLUETOOTH_PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private final static int REQ_CODE_SPEECH_OUT = 143;
@@ -69,7 +71,6 @@ public class MainActivity extends Activity {
                 } else {
                     String errorStatus = "Failed to initialize textToSpeech with status:" + status;
                     Log.d(this.toString(), errorStatus);
-                    textToSpeech.speak(errorStatus, TextToSpeech.QUEUE_ADD, null, null);
                 }
             }
         });
@@ -82,13 +83,12 @@ public class MainActivity extends Activity {
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            Log.d(this.toString(), getString(R.string.device_does_not_support_bluetooth));
-            textToSpeech.speak(getString(R.string.device_does_not_support_bluetooth), TextToSpeech.QUEUE_ADD, null, null);
+            logAndSpeak(getString(R.string.device_does_not_support_bluetooth));
             Toast.makeText(getApplicationContext(), getString(R.string.device_does_not_support_bluetooth), Toast.LENGTH_LONG).show();
             finish();
         } else {
             if (!bluetoothAdapter.isEnabled()) {
-                Log.d(this.toString(), "bluetoothAdapter is not enabled...Requesting permission to enable");
+                logAndSpeak(getString(R.string.BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW));
                 Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(turnBTon, 1);
             }
@@ -265,8 +265,7 @@ public class MainActivity extends Activity {
                                         currentLocation = receivedString;
                                         Log.d(this.toString(), "rawBytesReturnInt:" + read);
                                         debugTextView.setText(receivedString);
-                                        textToSpeech.speak("You have arrived at " + receivedString, TextToSpeech.QUEUE_ADD, null, null);
-
+                                        logAndSpeak("You have arrived at " + receivedString, TextToSpeech.QUEUE_FLUSH);
                                     }
                                 }
                             });
@@ -311,7 +310,20 @@ public class MainActivity extends Activity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        logAndSpeak(response);
+                        //logAndSpeak(response);
+                        try {
+                            JSONObject reader = new JSONObject(response);
+                            JSONArray contacts = reader.getJSONArray("Path");
+                            logAndSpeak("there are " + contacts.length() + " nodes you have to visit. They are:");
+                            for (int i = 0; i < contacts.length(); i++) {
+                                logAndSpeak(contacts.getString(i));
+                                if (i != contacts.length() - 1) {
+                                    logAndSpeak("then");
+                                }
+                            }
+                        } catch (JSONException e) {
+                            Log.e(this.toString(), e.getMessage());
+                        }
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -340,13 +352,13 @@ public class MainActivity extends Activity {
         sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
     }
 
-    /**
-     * Helper function
-     *
-     * @param toSpeak -- string to log and speak
-     */
     private void logAndSpeak(String toSpeak) {
         Log.d(this.toString(), toSpeak);
         textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_ADD, null, null);
+    }
+
+    private void logAndSpeak(String toSpeak, int queueMode) {
+        Log.d(this.toString(), toSpeak);
+        textToSpeech.speak(toSpeak, queueMode, null, null);
     }
 }
