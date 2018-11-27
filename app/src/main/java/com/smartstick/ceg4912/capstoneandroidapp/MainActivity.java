@@ -1,16 +1,23 @@
 package com.smartstick.ceg4912.capstoneandroidapp;
 
-
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
+import android.telephony.SmsManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -38,12 +45,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MainActivity extends Activity {
+import androidx.core.app.ActivityCompat;
+
+public class MainActivity extends Activity implements LocationListener {
 
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
     private static final UUID BLUETOOTH_PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private final static int REQ_CODE_SPEECH_OUT = 143;
+    private final static int SEND_SMS_PERMISSION_REQ = 1;
     private static boolean expectingFirstCharacter = true;
     private static BluetoothSocket bluetoothSocket = null;
     private static RequestQueue requestQueue;
@@ -56,6 +66,9 @@ public class MainActivity extends Activity {
     private static InputStream inputStream;
     private static BluetoothSocket socket;
     private static BluetoothAdapter bluetoothAdapter;
+    private static double latitude;
+    private static double longtitude;
+    private static LocationManager locationManager;
     private TextToSpeech textToSpeech;
     private TextView debugTextView;
 
@@ -101,7 +114,6 @@ public class MainActivity extends Activity {
                 Log.d(this.toString(), "thread have been killed");
             }
         }
-        boolean granted = Utility.checkAndRequestPermission(this);
     }
 
     @Override
@@ -121,13 +133,17 @@ public class MainActivity extends Activity {
 
     public void onSync(View v) {
         logAndSpeak(getString(R.string.YOU_HAVE_PRESSED_THE_SYNC_BUTTON));
-        debugTextView.setText(getString(R.string.user_clicked_onsync));
         beginBluetoothConnection();
     }
 
     public void onVoice(View v) {
-        debugTextView.setText(getString(R.string.user_clicked_onvoice));
+        logAndSpeak(getString(R.string.user_clicked_onvoice));
         btnToOpenMic();
+    }
+
+    public void onSos(View v) {
+        logAndSpeak(getString(R.string.user_clicked_on_sos));
+        updateLocation();
     }
 
     /*
@@ -360,5 +376,92 @@ public class MainActivity extends Activity {
     private void logAndSpeak(String toSpeak, int queueMode) {
         Log.d(this.toString(), toSpeak);
         textToSpeech.speak(toSpeak, queueMode, null, null);
+    }
+
+    /**
+     * MINGWEI
+     */
+    private void updateLocation() {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (
+                checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                        checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                ) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS},
+                    1);
+        }
+        Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        onLocationChanged(location);
+        String phoneNumber = "3437776586";
+        String googleMapApiCall = "https://www.google.com/maps/?q=" + latitude + "," + longtitude;
+        // TO DO: get the current location.
+        Toast.makeText(MainActivity.this, "Location Sent successfully", Toast.LENGTH_SHORT).show();
+
+        if (checkSelfPermission(Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.SEND_SMS},
+                    2);
+        }
+        if (!TextUtils.isEmpty(phoneNumber) && !TextUtils.isEmpty(googleMapApiCall)) {
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage(phoneNumber, null, googleMapApiCall, null, null);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case 1: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    logAndSpeak("Permission granted to access user location");
+                } else {
+                    logAndSpeak("Permission denied to access user location");
+                }
+                break;
+            }
+
+            case 2: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    logAndSpeak("Permission granted to send SMS");
+                } else {
+                    logAndSpeak("Permission denied to send SMS");
+                }
+                break;
+            }
+
+            default: {
+                logAndSpeak("unknown permission requested:");
+                for (String s : permissions) {
+                    logAndSpeak(s);
+                }
+                for (int s = 0; s < grantResults.length; s++) {
+                    logAndSpeak("grant result number " + s + " is " + grantResults[s]);
+                }
+                break;
+            }
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        latitude = location.getLatitude();
+        longtitude = location.getLongitude();
+        debugTextView.setText(MessageFormat.format("latitude: {0} longtitude: {1}", latitude, longtitude));
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
     }
 }

@@ -34,4 +34,7 @@
     <string name="YOU_HAVE_PRESSED_THE_SYNC_BUTTON">You have pressed to sync.</string>
     <string name="CONNECTION_TO_BLUETOOTH_DEVICE_SUCCESSFULL">Connection to the Bluetooth device succesfull!.</string>
     <string name="BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW">bluetoothAdapter is not enabled...Requesting permission to enable</string>
+    <string name="PERMISSION_ALREADY_GRANTED">Permission already granteed</string>
+    <string name="SOS">SAUCE</string>
+    <string name="user_clicked_on_sos">user clicked on sos</string>
 </resources>
