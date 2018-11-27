@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
     private static BluetoothSocket bluetoothSocket = null;
     private static RequestQueue requestQueue;
     private static boolean isConnectedToBluetooth = false;
-    private static String oldString = "";
+    private static String currentLocation = "";
     private static Thread thread;
     private static int byteCount = 0;
     private static BluetoothDevice device;
@@ -161,6 +161,7 @@ public class MainActivity extends Activity {
                         Log.d(this.toString(), voicesIndex + ". " + voiceInText.get(voicesIndex));
                         debugTextView.append("\n" + voicesIndex + ". " + voiceInText.get(voicesIndex));
                     }
+                    getDirectionFromDb(currentLocation, voiceInText.get(0));
                 }
                 break;
             }
@@ -257,8 +258,8 @@ public class MainActivity extends Activity {
                             final String receivedString = new String(rawBytes, "UTF-8");
                             handler.post(new Runnable() {
                                 public void run() {
-                                    if (!oldString.equals(receivedString)) {
-                                        oldString = receivedString;
+                                    if (!currentLocation.equals(receivedString)) {
+                                        currentLocation = receivedString;
                                         Log.d(this.toString(), "rawBytesReturnInt:" + read);
                                         debugTextView.setText(receivedString);
                                         textToSpeech.speak("You have arrived at " + receivedString, TextToSpeech.QUEUE_ADD, null, null);
@@ -279,10 +280,9 @@ public class MainActivity extends Activity {
 
     private void DisconnectBluetooth() {
         isConnectedToBluetooth = false;
-        if (bluetoothSocket != null) //If the bluetoothSocket is busy
-        {
+        if (bluetoothSocket != null) {
             try {
-                bluetoothSocket.close(); //close connection
+                bluetoothSocket.close();
             } catch (IOException e) {
                 Log.e(this.toString(), e.getMessage());
             }
