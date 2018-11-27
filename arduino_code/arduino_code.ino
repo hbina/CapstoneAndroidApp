@@ -11,7 +11,7 @@ SoftwareSerial BTserial(6, 7); // RX | TX
 #define RST_PIN 9
 MFRC522 mfrc522(SS_PIN, RST_PIN);   // Create MFRC522 instance.
 int counter = 1;
-byte key[5] = {100, 100, 100, 100};
+byte key[5] = {100, 100, 100, 100, 100};
 void setup()
 {
   pinMode(3, OUTPUT);
@@ -22,24 +22,38 @@ void setup()
   BTserial.begin(9600);
 
 }
+
+boolean reached = false;
 void loop()
 {
   // Look for new cards
   if ( ! mfrc522.PICC_IsNewCardPresent())
   {
+    if (!reached) {
+      Serial.println("hello1");
+      reached = true;
+    }
     return;
   } else {
     // Select one of the cards
     if ( ! mfrc522.PICC_ReadCardSerial())
     {
+      if (!reached) {
+        Serial.println("hello2");
+        reached = true;
+      }
       return;
     } else {
+      if (!reached) {
+        Serial.println("hello3");
+        reached = true;
+      }
       String content = "";
       byte letter;
       boolean someBool = false;
-      for (byte i = 0; i < mfrc522.uid.size; i++)
+      for (byte i = 1; i < mfrc522.uid.size + 1; i++)
       {
-        if (key[i] != mfrc522.uid.uidByte[i]) {
+        if (key[i] != mfrc522.uid.uidByte[i - 1]) {
           someBool = someBool || true;
         }
       }
@@ -49,11 +63,11 @@ void loop()
         Serial.print("different key of size:");
         Serial.print(mfrc522.uid.size);
         Serial.print("\n");
-        for (byte i = 0; i < mfrc522.uid.size; i++)
+        for (byte i = 0; i < mfrc522.uid.size + 1; i++)
         {
-            key[i] = mfrc522.uid.uidByte[i];
-            Serial.print(key[i], HEX);
-            BTserial.print(key[i], HEX);
+          key[i] = mfrc522.uid.uidByte[i - 1];
+          Serial.print(key[i], HEX);
+          BTserial.print(key[i], HEX);
         }
         Serial.print(" no.");
         Serial.print(counter++);
