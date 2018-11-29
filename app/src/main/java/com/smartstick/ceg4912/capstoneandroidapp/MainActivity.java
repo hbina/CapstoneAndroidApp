@@ -68,9 +68,8 @@ public class MainActivity extends Activity implements LocationListener {
     private static BluetoothAdapter bluetoothAdapter;
     private static double latitude;
     private static double longtitude;
-    private static LocationManager locationManager;
     private TextToSpeech textToSpeech;
-    private TextView debugTextView;
+    private volatile TextView debugTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,17 +131,17 @@ public class MainActivity extends Activity implements LocationListener {
     }
 
     public void onSync(View v) {
-        logAndSpeak(getString(R.string.YOU_HAVE_PRESSED_THE_SYNC_BUTTON));
+        logAndSpeak(getString(R.string.USER_HAVE_PRESSED_THE_SYNC_BUTTON));
         beginBluetoothConnection();
     }
 
     public void onVoice(View v) {
-        logAndSpeak(getString(R.string.user_clicked_onvoice));
+        logAndSpeak(getString(R.string.USER_HAVE_PRESSED_THE_VOICE_BUTTON));
         btnToOpenMic();
     }
 
     public void onSos(View v) {
-        logAndSpeak(getString(R.string.user_clicked_on_sos));
+        logAndSpeak(getString(R.string.USER_HAVE_PRESSED_THE_SOS_BUTTON));
         updateLocation();
     }
 
@@ -219,11 +218,6 @@ public class MainActivity extends Activity implements LocationListener {
                 logAndSpeak(getString(R.string.ERROR_MESSAGE_BLUETOOTH_IS_NOT_ENABLED));
                 Intent enableAdapter = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(enableAdapter, 0);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Log.d(this.toString(), e.getMessage());
-                }
             }
             Set<BluetoothDevice> connectedDevices = bluetoothAdapter.getBondedDevices();
             if (connectedDevices.isEmpty()) {
@@ -263,7 +257,7 @@ public class MainActivity extends Activity implements LocationListener {
     }
 
     private void beginListenForData() {
-        debugTextView.setText(getString(R.string.begin_listening_to_data));
+        debugTextView.setText(getString(R.string.BEGIN_LISTENING_TO_DATA));
         final Handler handler = new Handler();
         stopThread.set(false);
         thread = new Thread(new Runnable() {
@@ -285,7 +279,6 @@ public class MainActivity extends Activity implements LocationListener {
                                     }
                                 }
                             });
-
                         }
                     } catch (IOException e) {
                         Log.e(this.toString(), e.getMessage());
@@ -326,7 +319,7 @@ public class MainActivity extends Activity implements LocationListener {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        //logAndSpeak(response);
+                        debugTextView.setText(response);
                         try {
                             JSONObject reader = new JSONObject(response);
                             JSONArray contacts = reader.getJSONArray("Path");
@@ -382,7 +375,7 @@ public class MainActivity extends Activity implements LocationListener {
      * MINGWEI
      */
     private void updateLocation() {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (
                 checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                         checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
@@ -395,9 +388,7 @@ public class MainActivity extends Activity implements LocationListener {
         onLocationChanged(location);
         String phoneNumber = "3437776586";
         String googleMapApiCall = "https://www.google.com/maps/?q=" + latitude + "," + longtitude;
-        // TO DO: get the current location.
-        Toast.makeText(MainActivity.this, "Location Sent successfully", Toast.LENGTH_SHORT).show();
-
+        logAndSpeak("Location have been sent");
         if (checkSelfPermission(Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.SEND_SMS},

@@ -124,3 +124,4 @@ There is a problem where the inputStream is missing a character.
 
 Created a way to connect to Bluetooth.
 We have not tested if it works.
+Merged with Mingwei's code to send SOS messages.
