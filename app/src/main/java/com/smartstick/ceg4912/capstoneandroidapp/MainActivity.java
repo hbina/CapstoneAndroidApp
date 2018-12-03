@@ -53,16 +53,13 @@ public class MainActivity extends Activity implements LocationListener {
     private static final UUID BLUETOOTH_PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
     private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private final static int REQ_CODE_SPEECH_OUT = 143;
-    private final static int SEND_SMS_PERMISSION_REQ = 1;
-    private static boolean expectingFirstCharacter = true;
-    private static BluetoothSocket bluetoothSocket = null;
+    private static final AtomicBoolean stopThread = new AtomicBoolean();
     private static RequestQueue requestQueue;
     private static boolean isConnectedToBluetooth = false;
     private static String currentLocation = "";
     private static Thread thread;
     private static int byteCount = 0;
     private static BluetoothDevice device;
-    private static AtomicBoolean stopThread = new AtomicBoolean();
     private static InputStream inputStream;
     private static BluetoothSocket socket;
     private static BluetoothAdapter bluetoothAdapter;
@@ -126,7 +123,6 @@ public class MainActivity extends Activity implements LocationListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        DisconnectBluetooth();
         stopThread.set(false);
     }
 
@@ -196,7 +192,7 @@ public class MainActivity extends Activity implements LocationListener {
     /*
     Bluetooth Connection
      */
-    public void beginBluetoothConnection() {
+    private void beginBluetoothConnection() {
         if (!isConnectedToBluetooth) {
             if (initializeBluetooth() && connectWithBluetoothSocket()) {
                 isConnectedToBluetooth = true;
@@ -208,7 +204,7 @@ public class MainActivity extends Activity implements LocationListener {
         }
     }
 
-    public boolean initializeBluetooth() {
+    private boolean initializeBluetooth() {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             logAndSpeak(getString(R.string.ERROR_MESSAGE_DEVICE_DOES_NOT_SUPPORT_BLUETOOTH));
@@ -234,7 +230,7 @@ public class MainActivity extends Activity implements LocationListener {
         }
     }
 
-    public boolean connectWithBluetoothSocket() {
+    private boolean connectWithBluetoothSocket() {
         boolean connected = true;
         try {
             socket = device.createRfcommSocketToServiceRecord(BLUETOOTH_PORT_UUID);
@@ -275,7 +271,7 @@ public class MainActivity extends Activity implements LocationListener {
                                         currentLocation = receivedString;
                                         Log.d(this.toString(), "rawBytesReturnInt:" + read);
                                         debugTextView.setText(receivedString);
-                                        logAndSpeak("You have arrived at " + receivedString, TextToSpeech.QUEUE_FLUSH);
+                                        logAndForceSpeak("You have arrived at " + receivedString);
                                     }
                                 }
                             });
@@ -288,27 +284,6 @@ public class MainActivity extends Activity implements LocationListener {
             }
         });
         thread.start();
-    }
-
-    private void DisconnectBluetooth() {
-        isConnectedToBluetooth = false;
-        if (bluetoothSocket != null) {
-            try {
-                bluetoothSocket.close();
-            } catch (IOException e) {
-                Log.e(this.toString(), e.getMessage());
-            }
-        }
-    }
-
-    private void sendStringToBluetooth(String data) {
-        if (bluetoothSocket != null) {
-            try {
-                bluetoothSocket.getOutputStream().write(data.getBytes());
-            } catch (IOException e) {
-                Log.e(this.toString(), e.getMessage());
-            }
-        }
     }
 
     /*
@@ -358,7 +333,6 @@ public class MainActivity extends Activity implements LocationListener {
         };
         debugTextView.setText(MessageFormat.format("performing request on link:{0}", jsonObjRequest.getUrl()));
         requestQueue.add(jsonObjRequest);
-        sendStringToBluetooth(String.valueOf(System.currentTimeMillis()));
     }
 
     private void logAndSpeak(String toSpeak) {
@@ -366,9 +340,9 @@ public class MainActivity extends Activity implements LocationListener {
         textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_ADD, null, null);
     }
 
-    private void logAndSpeak(String toSpeak, int queueMode) {
+    private void logAndForceSpeak(String toSpeak) {
         Log.d(this.toString(), toSpeak);
-        textToSpeech.speak(toSpeak, queueMode, null, null);
+        textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 
     /**

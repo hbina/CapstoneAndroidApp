@@ -3,23 +3,9 @@
     <string name="voice">VOICE</string>
     <string name="sync">SYNC</string>
     <string name="debug_string">hello world</string>
-    <string name="connection_opened">\nConnection Opened!\n</string>
-    <string name="no_bluetooth_devices_available">No Bluetooth devices available</string>
-    <string name="user_clicked_onsync">User have clicked onSync</string>
     <string name="USER_HAVE_PRESSED_THE_VOICE_BUTTON">User have clicked onVoice</string>
     <string name="please_enter_the_destination">Please Enter the Destination</string>
-    <string name="begin_connecting_to_bluetooth">begin connecting to Bluetooth…</string>
-    <string name="bluetooth_initialize">initializing Bluetooth…</string>
-    <string name="device_cannot_open_bluetooth">device cannot open Bluetooth…</string>
-    <string name="no_bluetooth_devices_found">no connected Bluetooth devices found…</string>
-    <string name="begin_request">begin request…</string>
-    <string name="unable_to_establish_connection_with_bluetooth_device">unable to establish connection with Bluetooth device…</string>
-    <string name="fail_to_initialize_bluetooth">fail to initialize Bluetooth…</string>
     <string name="BEGIN_LISTENING_TO_DATA">Begin listening to data…</string>
-    <string name="begin_running_thread">Begin running thread..</string>
-    <string name="bluetooth_is_not_enabled">Bluetooth is not enabled! Requesting permission to enable now…</string>
-    <string name="already_connected">already connected, perhaps vibrate it??</string>
-    <string name="resumed_from">resumed from</string>
     <string name="recevied_the_following_text">received the following text:</string>
     <string name="device_does_not_support_bluetooth">Device does not support Bluetooth</string>
     <string name="http_request_api_param_from">from</string>
@@ -33,8 +19,7 @@
     <string name="DATA_WAS_NULL">Data was null</string>
     <string name="USER_HAVE_PRESSED_THE_SYNC_BUTTON">You have pressed to sync.</string>
     <string name="CONNECTION_TO_BLUETOOTH_DEVICE_SUCCESSFULL">Connection to the Bluetooth device succesfull!.</string>
-    <string name="BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW">bluetoothAdapter is not enabled...Requesting permission to enable</string>
-    <string name="PERMISSION_ALREADY_GRANTED">Permission already granteed</string>
+    <string name="BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW">bluetoothAdapter is not enabled…Requesting permission to enable</string>
     <string name="SOS">SAUCE</string>
     <string name="USER_HAVE_PRESSED_THE_SOS_BUTTON">user clicked on sos</string>
 </resources>
