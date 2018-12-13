@@ -20,7 +20,6 @@ import android.telephony.SmsManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -67,7 +66,6 @@ public class MainActivity extends Activity implements LocationListener {
     private static double latitude;
     private static double longtitude;
     private TextToSpeech textToSpeech;
-    private volatile TextView debugTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +87,6 @@ public class MainActivity extends Activity implements LocationListener {
     @Override
     public void onResume() {
         super.onResume();
-        debugTextView = findViewById(R.id.debug_textview);
         requestQueue = Volley.newRequestQueue(getApplicationContext());
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
@@ -172,7 +169,6 @@ public class MainActivity extends Activity implements LocationListener {
                 Log.d(this.toString(), "REQ_CODE_SPEECH_OUT");
                 if (data != null) {
                     ArrayList<String> voiceInText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    debugTextView.setText(getString(R.string.recevied_the_following_text));
                     logAndSpeak("The following options are possible:");
                     for (int voicesIndex = 0; voicesIndex < voiceInText.size(); voicesIndex++) {
                         logAndSpeak((voicesIndex + 1) + ". " + voiceInText.get(voicesIndex));
@@ -254,7 +250,6 @@ public class MainActivity extends Activity implements LocationListener {
     }
 
     private void beginListenForData() {
-        debugTextView.setText(getString(R.string.BEGIN_LISTENING_TO_DATA));
         final Handler handler = new Handler();
         stopThread.set(false);
         thread = new Thread(new Runnable() {
@@ -271,7 +266,6 @@ public class MainActivity extends Activity implements LocationListener {
                                     if (!currentLocation.equals(receivedString)) {
                                         currentLocation = receivedString;
                                         Log.d(this.toString(), "rawBytesReturnInt:" + read);
-                                        debugTextView.setText(receivedString);
                                         logAndForceSpeak("You have arrived at " + receivedString);
                                     }
                                 }
@@ -295,7 +289,6 @@ public class MainActivity extends Activity implements LocationListener {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        debugTextView.setText(response);
                         try {
                             JSONObject reader = new JSONObject(response);
                             JSONArray contacts = reader.getJSONArray("Path");
@@ -332,7 +325,6 @@ public class MainActivity extends Activity implements LocationListener {
             }
 
         };
-        debugTextView.setText(MessageFormat.format("performing request on link:{0}", jsonObjRequest.getUrl()));
         requestQueue.add(jsonObjRequest);
     }
 
@@ -416,7 +408,6 @@ public class MainActivity extends Activity implements LocationListener {
     public void onLocationChanged(Location location) {
         latitude = location.getLatitude();
         longtitude = location.getLongitude();
-        debugTextView.setText(MessageFormat.format("latitude: {0} longtitude: {1}", latitude, longtitude));
     }
 
     @Override

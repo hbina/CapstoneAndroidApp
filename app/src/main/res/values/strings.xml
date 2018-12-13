@@ -2,11 +2,8 @@
     <string name="app_name">CapstoneAndroidApp</string>
     <string name="voice">VOICE</string>
     <string name="sync">SYNC</string>
-    <string name="debug_string">hello world</string>
     <string name="USER_HAVE_PRESSED_THE_VOICE_BUTTON">User have clicked onVoice</string>
     <string name="please_enter_the_destination">Please Enter the Destination</string>
-    <string name="BEGIN_LISTENING_TO_DATA">Begin listening to data…</string>
-    <string name="recevied_the_following_text">received the following text:</string>
     <string name="device_does_not_support_bluetooth">Device does not support Bluetooth</string>
     <string name="http_request_api_param_from">from</string>
     <string name="http_request_api_param_to">to</string>
@@ -20,6 +17,6 @@
     <string name="USER_HAVE_PRESSED_THE_SYNC_BUTTON">You have pressed to sync.</string>
     <string name="CONNECTION_TO_BLUETOOTH_DEVICE_SUCCESSFULL">Connection to the Bluetooth device succesfull!.</string>
     <string name="BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW">bluetoothAdapter is not enabled…Requesting permission to enable</string>
-    <string name="SOS">SAUCE</string>
+    <string name="SOS">SOS</string>
     <string name="USER_HAVE_PRESSED_THE_SOS_BUTTON">user clicked on sos</string>
 </resources>
