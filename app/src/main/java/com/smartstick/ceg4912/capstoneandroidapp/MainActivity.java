@@ -47,6 +47,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
+import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_PERMISSION_SEND_SMS;
+import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_TURN_BLUETOOTH_ON;
+import static com.smartstick.ceg4912.capstoneandroidapp.VoiceAnalysis.calculateScore;
+
 public class MainActivity extends Activity implements LocationListener {
 
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
@@ -97,7 +101,7 @@ public class MainActivity extends Activity implements LocationListener {
             if (!bluetoothAdapter.isEnabled()) {
                 logAndSpeak(getString(R.string.BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW));
                 Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(turnBTon, 1);
+                startActivityForResult(turnBTon, REQUEST_CODE_TURN_BLUETOOTH_ON);
             }
 
             if (thread == null) {
@@ -121,28 +125,24 @@ public class MainActivity extends Activity implements LocationListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopThread.set(false);
     }
 
     public void onSync(View v) {
-        logAndSpeak(getString(R.string.USER_HAVE_PRESSED_THE_SYNC_BUTTON));
         beginBluetoothConnection();
     }
 
     public void onVoice(View v) {
-        logAndSpeak(getString(R.string.USER_HAVE_PRESSED_THE_VOICE_BUTTON));
-        btnToOpenMic();
+        openMic();
     }
 
     public void onSos(View v) {
-        logAndSpeak(getString(R.string.USER_HAVE_PRESSED_THE_SOS_BUTTON));
         updateLocation();
     }
 
     /*
     Voice Control
      */
-    private void btnToOpenMic() {
+    private void openMic() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
 
@@ -161,17 +161,17 @@ public class MainActivity extends Activity implements LocationListener {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case RESULT_OK: {
-                Log.d(this.toString(), "RESULT_OK");
+                Log.d(this.toString(), "Result was OK...whatever that means");
                 break;
             }
 
             case REQ_CODE_SPEECH_OUT: {
-                Log.d(this.toString(), "REQ_CODE_SPEECH_OUT");
                 if (data != null) {
                     ArrayList<String> voiceInText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    logAndSpeak("The following options are possible:");
-                    for (int voicesIndex = 0; voicesIndex < voiceInText.size(); voicesIndex++) {
-                        logAndSpeak((voicesIndex + 1) + ". " + voiceInText.get(voicesIndex));
+                    int semanticScore = 0;
+                    String helloWorld = "hello world";
+                    for (String voiceAsString : voiceInText) {
+                        Log.d(this.toString(), "The score of " + voiceAsString + " against " + helloWorld + " is " + calculateScore(voiceAsString, helloWorld));
                     }
                     getDirectionFromDb(currentLocation, voiceInText.get(0));
                 } else {
@@ -180,7 +180,7 @@ public class MainActivity extends Activity implements LocationListener {
                 break;
             }
             default: {
-                Log.d(this.toString(), "requestCode:" + requestCode);
+                Log.d(this.toString(), "Unknown request code...defaulting. The requestCode was " + requestCode);
                 break;
             }
         }
@@ -251,7 +251,6 @@ public class MainActivity extends Activity implements LocationListener {
 
     private void beginListenForData() {
         final Handler handler = new Handler();
-        stopThread.set(false);
         thread = new Thread(new Runnable() {
             public void run() {
                 while (!Thread.currentThread().isInterrupted() && !stopThread.get()) {
@@ -371,17 +370,18 @@ public class MainActivity extends Activity implements LocationListener {
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[], @NonNull int[] grantResults) {
         switch (requestCode) {
-            case 1: {
+            case REQUEST_CODE_TURN_BLUETOOTH_ON: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     logAndSpeak("Permission granted to access user location");
                 } else {
-                    logAndSpeak("Permission denied to access user location");
+                    logAndSpeak("Permission denied to access user location. The application cannot work without it. Exiting program");
+                    finish();
                 }
                 break;
             }
 
-            case 2: {
+            case REQUEST_CODE_PERMISSION_SEND_SMS: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     logAndSpeak("Permission granted to send SMS");
@@ -420,5 +420,11 @@ public class MainActivity extends Activity implements LocationListener {
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
+    }
+
+    public static class RequestCodes {
+        public static final int REQUEST_CODE_TURN_BLUETOOTH_ON = 0;
+        public static final int REQUEST_CODE_PERMISSION_SEND_SMS = 1;
+
     }
 }
