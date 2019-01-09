@@ -62,7 +62,6 @@ public class MainActivity extends Activity implements LocationListener {
   private static RequestQueue requestQueue;
   private static boolean isConnectedToBluetooth = false;
   private static String currentLocation = "";
-  private static Thread thread;
   private static int byteCount = 0;
   private static BluetoothDevice device;
   private static InputStream inputStream;
@@ -72,6 +71,23 @@ public class MainActivity extends Activity implements LocationListener {
   private static double longtitude;
   private TextToSpeech textToSpeech;
   private String emergencyNumber;
+
+  private boolean checkPermissions() {
+    if (
+        checkSelfPermission(
+            Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            checkSelfPermission(
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(
+            Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED
+        ) {
+      ActivityCompat.requestPermissions(this,
+          new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS },
+          1);
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -252,7 +268,7 @@ public class MainActivity extends Activity implements LocationListener {
 
   private void beginListenForData() {
     final Handler handler = new Handler();
-    thread = new Thread(new Runnable() {
+    Thread thread = new Thread(new Runnable() {
       public void run() {
         while (!Thread.currentThread().isInterrupted() && !stopThread.get()) {
           try {
@@ -349,25 +365,23 @@ public class MainActivity extends Activity implements LocationListener {
         checkSelfPermission(
             Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             checkSelfPermission(
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(
+            Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED
         ) {
       ActivityCompat.requestPermissions(this,
           new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS },
           1);
+      Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+      onLocationChanged(location);
+      String googleMapApiCall = "https://www.google.com/maps/?q=" + latitude + "," + longtitude;
+      if (!TextUtils.isEmpty(phoneNumber) && !TextUtils.isEmpty(googleMapApiCall)) {
+        SmsManager smsManager = SmsManager.getDefault();
+        smsManager.sendTextMessage(phoneNumber, null, googleMapApiCall, null, null);
+      } else {
+        Log.e(this.toString(), "Permissions are not granted.");
+      }
     }
-    Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-    onLocationChanged(location);
-    String googleMapApiCall = "https://www.google.com/maps/?q=" + latitude + "," + longtitude;
-    logAndSpeak("Location have been sent");
-    if (checkSelfPermission(Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-      ActivityCompat.requestPermissions(this,
-          new String[]{ Manifest.permission.SEND_SMS },
-          2);
-    }
-    if (!TextUtils.isEmpty(phoneNumber) && !TextUtils.isEmpty(googleMapApiCall)) {
-      SmsManager smsManager = SmsManager.getDefault();
-      smsManager.sendTextMessage(phoneNumber, null, googleMapApiCall, null, null);
-    }
+
   }
 
   @Override
@@ -378,10 +392,9 @@ public class MainActivity extends Activity implements LocationListener {
       case REQUEST_CODE_TURN_BLUETOOTH_ON: {
         if (grantResults.length > 0
             && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          logAndSpeak("Permission granted to access user location");
+          Log.d(this.toString(), "Bluetooth have been turned on");
         } else {
-          logAndSpeak(
-              "Permission denied to access user location. The application cannot work without it. Exiting program");
+          logAndForceSpeak("The application requires Bluetooth connection. Exiting the program!");
           finish();
         }
         break;
@@ -390,21 +403,16 @@ public class MainActivity extends Activity implements LocationListener {
       case REQUEST_CODE_PERMISSION_SEND_SMS: {
         if (grantResults.length > 0
             && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          logAndSpeak("Permission granted to send SMS");
+          Log.d(this.toString(), "Bluetooth have been turned on");
         } else {
-          logAndSpeak("Permission denied to send SMS");
+          Log.d(this.toString(),
+              "Permission to send SMS is disabled. This is a very dangerous behavior. Another request to enable this should be made later.");
         }
         break;
       }
 
       default: {
-        logAndSpeak("unknown permission requested:");
-        for (String s : permissions) {
-          logAndSpeak(s);
-        }
-        for (int s = 0; s < grantResults.length; s++) {
-          logAndSpeak("grant result number " + s + " is " + grantResults[s]);
-        }
+        Log.e(this.toString(), "Unknwon requestCode:" + requestCode);
         break;
       }
     }
@@ -412,16 +420,24 @@ public class MainActivity extends Activity implements LocationListener {
 
   @Override
   public void onLocationChanged(Location location) {
-    latitude = location.getLatitude();
-    longtitude = location.getLongitude();
+    if (location != null) {
+      latitude = location.getLatitude();
+      longtitude = location.getLongitude();
+    } else {
+      Log.e(this.toString(), "location is null");
+    }
   }
 
   @Override
   public void onProviderDisabled(String provider) {
+    Log.d(this.toString(), "Provider have been disabled.");
+    Log.d(this.toString(), "provider:" + provider);
   }
 
   @Override
   public void onProviderEnabled(String provider) {
+    Log.d(this.toString(), "Provider have been enabled.");
+    Log.d(this.toString(), "provider:" + provider);
   }
 
   @Override
