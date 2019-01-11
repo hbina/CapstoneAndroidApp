@@ -72,23 +72,6 @@ public class MainActivity extends Activity implements LocationListener {
   private TextToSpeech textToSpeech;
   private String emergencyNumber;
 
-  private boolean checkPermissions() {
-    if (
-        checkSelfPermission(
-            Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            checkSelfPermission(
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(
-            Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED
-        ) {
-      ActivityCompat.requestPermissions(this,
-          new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS },
-          1);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
