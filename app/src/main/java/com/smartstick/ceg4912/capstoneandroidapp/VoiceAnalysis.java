@@ -1,14 +1,39 @@
 package com.smartstick.ceg4912.capstoneandroidapp;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.PriorityQueue;
+
 class VoiceAnalysis {
 
-    static int calculateScore(String test, String correct) {
+    private static final String[] TRUE_KEYWORDS = {
+            "Set direction",
+            "Send emergency message",
+            "Sync device"
+    };
+
+    public static String evaluate(ArrayList<String> givenKeywords) {
+        PriorityQueue<Keyword> arrOfGivenKeywords = new PriorityQueue<>();
+        for (String trueKeyword : TRUE_KEYWORDS) {
+            for (String givenKeyword : givenKeywords) {
+                int score = calculateScore(trueKeyword, givenKeyword);
+                arrOfGivenKeywords.add(new Keyword(trueKeyword, givenKeyword, score));
+            }
+        }
+        Keyword answerKeyword = arrOfGivenKeywords.poll();
+        if (answerKeyword == null) {
+            return "ERROR";
+        }
+        return answerKeyword.getTrueKeyword();
+    }
+
+    private static int calculateScore(String trueString, String givenString) {
         int score = 0;
-        int maxIndex = (test.length() > correct.length()) ? test.length() : correct.length();
-        int minIndex = (test.length() > correct.length()) ? correct.length() : test.length();
+        int maxIndex = (trueString.length() > givenString.length()) ? trueString.length() : givenString.length();
+        int minIndex = (trueString.length() > givenString.length()) ? givenString.length() : trueString.length();
 
         for (int a = 0; a < minIndex; a++) {
-            if (test.charAt(a) == correct.charAt(a)) {
+            if (trueString.charAt(a) == givenString.charAt(a)) {
                 score++;
             } else {
                 score--;
@@ -18,7 +43,5 @@ class VoiceAnalysis {
         return score;
     }
 
-    static class SpeechCodes{
-        static final String SET_EMERGENCY_NUMBER = "set emergency number";
-    }
+
 }
