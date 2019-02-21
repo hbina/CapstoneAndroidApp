@@ -1,7 +1,7 @@
-package com.smartstick.ceg4912.capstoneandroidapp;
+package com.smartstick.ceg4912.capstoneandroidapp.model;
 
 public class Keyword implements Comparable<Keyword> {
-    private int score;
+    private final int score;
     private final String givenKeyword;
     private final String trueKeyword;
 
@@ -9,10 +9,6 @@ public class Keyword implements Comparable<Keyword> {
         this.givenKeyword = givenKeyword;
         this.trueKeyword = trueKeyword;
         this.score = score;
-    }
-
-    public String getGivenKeyword() {
-        return this.givenKeyword;
     }
 
     public String getTrueKeyword() {

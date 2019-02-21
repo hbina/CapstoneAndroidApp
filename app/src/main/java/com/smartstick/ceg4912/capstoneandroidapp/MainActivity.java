@@ -28,6 +28,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceAnalysis;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,8 +36,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -112,11 +113,6 @@ public class MainActivity extends Activity implements LocationListener {
         if (requestQueue != null) {
             requestQueue.cancelAll(this.toString());
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
     }
 
     public void onSync(View v) {
@@ -250,7 +246,7 @@ public class MainActivity extends Activity implements LocationListener {
                         if (byteCount > 0) {
                             byte[] rawBytes = new byte[byteCount];
                             final int read = inputStream.read(rawBytes);
-                            final String receivedString = new String(rawBytes, "UTF-8");
+                            final String receivedString = new String(rawBytes, StandardCharsets.UTF_8);
                             handler.post(new Runnable() {
                                 public void run() {
                                     if (!currentLocation.equals(receivedString)) {
