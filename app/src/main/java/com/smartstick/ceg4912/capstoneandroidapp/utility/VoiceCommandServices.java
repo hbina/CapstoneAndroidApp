@@ -5,7 +5,7 @@ import com.smartstick.ceg4912.capstoneandroidapp.model.Keyword;
 import java.util.ArrayList;
 import java.util.PriorityQueue;
 
-public class VoiceAnalysis {
+public class VoiceCommandServices {
 
     private static final String[] TRUE_KEYWORDS = {
             "Set direction",

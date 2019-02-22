@@ -2,9 +2,6 @@ package com.smartstick.ceg4912.capstoneandroidapp;
 
 import android.Manifest;
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -13,14 +10,12 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.telephony.SmsManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -28,22 +23,16 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceAnalysis;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -54,28 +43,24 @@ import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCode
 public class MainActivity extends Activity implements LocationListener {
 
     private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
-    private static final UUID BLUETOOTH_PORT_UUID = UUID
-            .fromString("00001101-0000-1000-8000-00805f9b34fb");
-    private final static String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
     private final static int REQ_CODE_SPEECH_OUT = 143;
-    private static final AtomicBoolean stopThread = new AtomicBoolean();
     private static RequestQueue requestQueue;
-    private static boolean isConnectedToBluetooth = false;
-    private static String currentLocation = "";
-    private static int byteCount = 0;
-    private static BluetoothDevice device;
-    private static InputStream inputStream;
-    private static BluetoothSocket socket;
-    private static BluetoothAdapter bluetoothAdapter;
     private static double latitude;
     private static double longtitude;
     private TextToSpeech textToSpeech;
     private String emergencyNumber;
+    private BluetoothServices bluetoothServices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initializedTextToSpeech();
+        bluetoothServices = new BluetoothServices(this);
+        bluetoothServices.init(REQUEST_CODE_TURN_BLUETOOTH_ON);
+    }
+
+    private void initializedTextToSpeech() {
         textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -93,18 +78,12 @@ public class MainActivity extends Activity implements LocationListener {
     public void onResume() {
         super.onResume();
         requestQueue = Volley.newRequestQueue(getApplicationContext());
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            logAndSpeak(getString(R.string.device_does_not_support_bluetooth));
-            Toast.makeText(this, R.string.device_does_not_support_bluetooth, Toast.LENGTH_LONG).show();
-            finish();
-        } else {
-            if (!bluetoothAdapter.isEnabled()) {
-                logAndSpeak(getString(R.string.BLUETOOTH_PERMISSION_IS_NOT_GRANTED_REQUESTING_NOW));
-                Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(turnBTon, REQUEST_CODE_TURN_BLUETOOTH_ON);
-            }
-        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        bluetoothServices.killBluetooth();
     }
 
     @Override
@@ -116,7 +95,7 @@ public class MainActivity extends Activity implements LocationListener {
     }
 
     public void onSync(View v) {
-        beginBluetoothConnection();
+        Log.d(this.toString(), "User pressed onSync()");
     }
 
     public void onVoice(View v) {
@@ -156,7 +135,8 @@ public class MainActivity extends Activity implements LocationListener {
 
             case REQ_CODE_SPEECH_OUT: {
                 if (data != null) {
-                    getDirectionFromDb(currentLocation, VoiceAnalysis.evaluate(data
+                    String currentLocation = "";
+                    getDirectionFromDb(currentLocation, VoiceCommandServices.evaluate(data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)));
                 } else {
                     logAndSpeak(getString(R.string.DATA_WAS_NULL));
@@ -169,102 +149,6 @@ public class MainActivity extends Activity implements LocationListener {
                 break;
             }
         }
-    }
-
-    /*
-    Bluetooth Connection
-     */
-    private void beginBluetoothConnection() {
-        if (!isConnectedToBluetooth) {
-            if (initializeBluetooth() && connectWithBluetoothSocket()) {
-                isConnectedToBluetooth = true;
-                logAndSpeak(getString(R.string.CONNECTION_TO_BLUETOOTH_DEVICE_SUCCESSFULL));
-                beginListenForData();
-            }
-        } else {
-            logAndSpeak(getString(R.string.ERROR_MESSAGE_DEVICE_ALREADY_CONNECTED_TO_BLUETOOTH));
-        }
-    }
-
-    private boolean initializeBluetooth() {
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            logAndSpeak(getString(R.string.ERROR_MESSAGE_DEVICE_DOES_NOT_SUPPORT_BLUETOOTH));
-            return false;
-        } else {
-            if (!bluetoothAdapter.isEnabled()) {
-                logAndSpeak(getString(R.string.ERROR_MESSAGE_BLUETOOTH_IS_NOT_ENABLED));
-                Intent enableAdapter = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableAdapter, 0);
-            }
-            Set<BluetoothDevice> connectedDevices = bluetoothAdapter.getBondedDevices();
-            if (connectedDevices.isEmpty()) {
-                logAndSpeak(getString(R.string.ERROR_MESSAGE_NO_BLUETOOTH_DEVICE_CONNECTED));
-            } else {
-                for (BluetoothDevice iterator : connectedDevices) {
-                    if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
-                        device = iterator;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-    }
-
-    private boolean connectWithBluetoothSocket() {
-        boolean connected = true;
-        try {
-            socket = device.createRfcommSocketToServiceRecord(BLUETOOTH_PORT_UUID);
-            socket.connect();
-        } catch (IOException e) {
-            connected = false;
-            Log.e(this.toString(), e.getMessage());
-            logAndSpeak(MessageFormat
-                    .format(getString(R.string.ERROR_MESSAGE_UNABLE_TO_CONNECT_TO_SOCKET_WITH_PORT_ID),
-                            BLUETOOTH_PORT_UUID));
-        }
-        if (connected) {
-            try {
-                inputStream = socket.getInputStream();
-            } catch (IOException e) {
-                Log.e(this.toString(), e.getMessage());
-                logAndSpeak(getString(R.string.ERROR_MESSAGE_UNABLE_GET_BLUETOOTH_SOCKET_INPUT_STREAM));
-            }
-
-        }
-        return connected;
-    }
-
-    private void beginListenForData() {
-        final Handler handler = new Handler();
-        Thread thread = new Thread(new Runnable() {
-            public void run() {
-                while (!Thread.currentThread().isInterrupted() && !stopThread.get()) {
-                    try {
-                        byteCount = inputStream.available();
-                        if (byteCount > 0) {
-                            byte[] rawBytes = new byte[byteCount];
-                            final int read = inputStream.read(rawBytes);
-                            final String receivedString = new String(rawBytes, StandardCharsets.UTF_8);
-                            handler.post(new Runnable() {
-                                public void run() {
-                                    if (!currentLocation.equals(receivedString)) {
-                                        currentLocation = receivedString;
-                                        Log.d(this.toString(), "rawBytesReturnInt:" + read);
-                                        logAndForceSpeak("You have arrived at " + receivedString);
-                                    }
-                                }
-                            });
-                        }
-                    } catch (IOException e) {
-                        Log.e(this.toString(), e.getMessage());
-                    }
-                }
-                Log.d(this.toString(), "thread have finished running");
-            }
-        });
-        thread.start();
     }
 
     /*
@@ -362,10 +246,9 @@ public class MainActivity extends Activity implements LocationListener {
             case REQUEST_CODE_TURN_BLUETOOTH_ON: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(this.toString(), "Bluetooth have been turned on");
+                    bluetoothServices.beginBluetoothConnection();
                 } else {
-                    logAndForceSpeak("The application requires Bluetooth connection. Exiting the program!");
-                    finish();
+                    Log.d(this.toString(), "Bluetooth permission have not been granted. Application will not function properly.");
                 }
                 break;
             }
