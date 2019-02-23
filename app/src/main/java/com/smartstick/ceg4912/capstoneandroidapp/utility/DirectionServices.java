@@ -9,28 +9,32 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class DirectionServices {
 
     private final static String SMART_STICK_URL = "http://Capstone4913-env.rpwrn4wmqm.us-east-2.elasticbeanstalk.com/path/getDirection";
-    private static RequestQueue requestQueue;
+    private RequestQueue requestQueue;
+    private MainActivity callerActivity;
 
-    public DirectionServices(Activity activity) {
+    public DirectionServices(MainActivity activity) {
         requestQueue = Volley.newRequestQueue(activity.getApplicationContext());
+        callerActivity = activity;
     }
 
-    public ArrayList<String> getDirectionFromDb(final String from, final String to) {
+    public void getDirectionFromDb(final String from, final String to, final TextToSpeechServices textToSpeechServices) {
         Log.d(this.toString(), String.format("from:%s to:%s\n", from, to));
-        final ArrayList<String> paths = new ArrayList<>();
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
                 new Response.Listener<String>() {
                     @Override
@@ -39,7 +43,7 @@ public class DirectionServices {
                             JSONObject reader = (new JSONObject(response)).getJSONObject("Navigation");
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
-                            Log.d(this.toString(), String.format("direction%s bearing%d", direction, bearing));
+                            textToSpeechServices.logAndSpeak(String.format(Locale.ENGLISH, "turn %d to get to %s", bearing, direction));
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
                         }
@@ -69,7 +73,6 @@ public class DirectionServices {
 
         };
         requestQueue.add(jsonObjRequest);
-        return paths;
     }
 
 
