@@ -48,7 +48,7 @@ public class MainActivity extends Activity {
         bluetoothServices.init(REQUEST_CODE_TURN_BLUETOOTH_ON);
         directionServices = new DirectionServices(this);
         voiceCommandServices = new VoiceCommandServices(this);
-        emergencyServices = new EmergencyServices();
+        emergencyServices = new EmergencyServices(this);
     }
 
     @Override
