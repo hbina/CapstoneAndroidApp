@@ -41,6 +41,8 @@ public class BluetoothServices {
         this.socket = null;
         this.stopThread = new AtomicBoolean();
         this.byteCount = 0;
+        this.locationHistory = new Stack<>();
+        this.locationHistory.push("ADA392FE");
     }
 
     public void init(int returnCode) {

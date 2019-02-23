@@ -24,12 +24,14 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.DirectionServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -41,15 +43,14 @@ import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCode
 import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_TURN_BLUETOOTH_ON;
 
 public class MainActivity extends Activity implements LocationListener {
-
-    private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
     private final static int REQ_CODE_SPEECH_OUT = 143;
-    private static RequestQueue requestQueue;
+
     private static double latitude;
     private static double longtitude;
     private TextToSpeech textToSpeech;
     private String emergencyNumber;
     private BluetoothServices bluetoothServices;
+    private DirectionServices directionServices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +59,8 @@ public class MainActivity extends Activity implements LocationListener {
         initializedTextToSpeech();
         bluetoothServices = new BluetoothServices(this);
         bluetoothServices.init(REQUEST_CODE_TURN_BLUETOOTH_ON);
+
+        directionServices = new DirectionServices(this);
     }
 
     private void initializedTextToSpeech() {
@@ -75,24 +78,12 @@ public class MainActivity extends Activity implements LocationListener {
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        requestQueue = Volley.newRequestQueue(getApplicationContext());
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
         bluetoothServices.killBluetooth();
+        directionServices.cancelAll();
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (requestQueue != null) {
-            requestQueue.cancelAll(this.toString());
-        }
-    }
 
     public void onSync(View v) {
         Log.d(this.toString(), "User pressed onSync()");
@@ -135,11 +126,13 @@ public class MainActivity extends Activity implements LocationListener {
 
             case REQ_CODE_SPEECH_OUT: {
                 if (data != null) {
-                    String currentLocation = "";
-                    getDirectionFromDb(currentLocation, VoiceCommandServices.evaluate(data
+                    ArrayList<String> paths = directionServices.getDirectionFromDb(bluetoothServices.getCurrentLocation(), VoiceCommandServices.evaluate(data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)));
+                    for (String arr : paths) {
+                        Log.d(this.toString(), arr);
+                    }
                 } else {
-                    logAndSpeak(getString(R.string.DATA_WAS_NULL));
+                    Log.d(this.toString(), "Data is null");
                 }
                 break;
             }
@@ -149,55 +142,6 @@ public class MainActivity extends Activity implements LocationListener {
                 break;
             }
         }
-    }
-
-    /*
-    Database queries
-     */
-    private void getDirectionFromDb(final String from, final String to) {
-        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject reader = new JSONObject(response);
-                            JSONArray contacts = reader.getJSONArray("Path");
-                            logAndSpeak("there are " + contacts.length() + " nodes you have to visit. They are:");
-                            for (int i = 0; i < contacts.length(); i++) {
-                                logAndSpeak(contacts.getString(i));
-                                if (i != contacts.length() - 1) {
-                                    logAndSpeak("then");
-                                }
-                            }
-                        } catch (JSONException e) {
-                            Log.e(this.toString(), e.getMessage());
-                        }
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError e) {
-                Log.d(this.toString(),
-                        (e == null || e.getMessage() == null) ? "An unexpected error have occured" : e
-                                .getMessage());
-            }
-        }) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> pars = new HashMap<>();
-                pars.put("Content-Type", "application/x-www-form-urlencoded");
-                return pars;
-            }
-
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put(getString(R.string.http_request_api_param_from), from);
-                params.put(getString(R.string.http_request_api_param_to), to);
-                return params;
-            }
-
-        };
-        requestQueue.add(jsonObjRequest);
     }
 
     private void logAndSpeak(String toSpeak) {
