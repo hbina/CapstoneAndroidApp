@@ -3,27 +3,35 @@ package com.smartstick.ceg4912.capstoneandroidapp.utility;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.speech.RecognizerIntent;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.model.Keyword;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.PriorityQueue;
 
 public class VoiceCommandServices {
 
+    private static final String TAG = "VoiceCommandServices";
+    private final MainActivity callerActivity;
+    private final HashMap<String, Integer> map;
     private static final String[] TRUE_KEYWORDS = {
             "Set direction",
             "Set emergency number",
-            "Send emergency message",
-            "Sync device"
+            "Send help",
+            "Sync"
     };
-    private final MainActivity callerActivity;
 
     public VoiceCommandServices(MainActivity callerActivity) {
         this.callerActivity = callerActivity;
+        this.map = new HashMap<>();
+        for (int a = 0; a < TRUE_KEYWORDS.length; a++) {
+            map.put(TRUE_KEYWORDS[a], a);
+        }
     }
 
     public void openMic(int requestCode) {
@@ -37,53 +45,39 @@ public class VoiceCommandServices {
         try {
             callerActivity.startActivityForResult(intent, requestCode);
         } catch (ActivityNotFoundException e) {
-            Log.d(this.toString(), e.getMessage());
+            Log.d(TAG, e.getMessage());
         }
     }
 
-    public String evaluateCommands(ArrayList<String> givenKeywords) {
+    public int evaluateCommands(ArrayList<String> givenKeywords) {
         PriorityQueue<Keyword> arrOfGivenKeywords = new PriorityQueue<>();
         for (String trueKeyword : TRUE_KEYWORDS) {
             for (String givenKeyword : givenKeywords) {
-                int score = calculateScore(trueKeyword, givenKeyword);
-                arrOfGivenKeywords.add(new Keyword(trueKeyword, givenKeyword, score));
+                Keyword keyword = new Keyword(givenKeyword, trueKeyword);
+                arrOfGivenKeywords.add(keyword);
             }
         }
-        Keyword answerKeyword = arrOfGivenKeywords.poll();
+        Keyword answerKeyword = arrOfGivenKeywords.peek();
         if (answerKeyword == null) {
-            return "ERROR";
+            return -1;
+        } else {
+            String trueKeyword = answerKeyword.getTrueKeyword();
+            return map.get(trueKeyword);
         }
-        return answerKeyword.getTrueKeyword();
-    }
-
-    private int calculateScore(String trueString, String givenString) {
-        int score = 0;
-        int maxIndex = (trueString.length() > givenString.length()) ? trueString.length() : givenString.length();
-        int minIndex = (trueString.length() > givenString.length()) ? givenString.length() : trueString.length();
-
-        for (int a = 0; a < minIndex; a++) {
-            if (trueString.charAt(a) == givenString.charAt(a)) {
-                score++;
-            } else {
-                score--;
-            }
-        }
-        score -= (maxIndex - minIndex);
-        return score;
-    }
-
-
-    public void parse(ArrayList<String> generatedStrings) {
-
     }
 
     public String evaluateForNumber(ArrayList<String> generatedStrings) {
-        // TODO: Evaluate which is more likely to be numbers
-        return "";
+        for (String generateString : generatedStrings) {
+            generateString = generateString.replaceAll("[^0-9]", "");
+            if (TextUtils.isDigitsOnly(generateString)) {
+                return generateString;
+            }
+        }
+        return null;
     }
 
     public String evaluateAsPlaces(ArrayList<String> generatedStrings) {
         // TODO : Evaluate which is more likely to be places
-        return "";
+        return "Fido";
     }
 }

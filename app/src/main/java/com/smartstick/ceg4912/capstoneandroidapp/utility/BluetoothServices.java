@@ -20,13 +20,13 @@ public class BluetoothServices {
 
     private boolean isConnectedToBluetooth;
     private BluetoothAdapter bluetoothAdapter;
-    private Activity callerActivity;
+    private final Activity callerActivity;
     private BluetoothDevice device;
     private InputStream inputStream;
     private BluetoothSocket socket;
-    private AtomicBoolean stopThread;
+    private final AtomicBoolean stopThread;
     private int byteCount;
-    private Stack<String> locationHistory;
+    private final Stack<String> locationHistory;
 
     private static final UUID BLUETOOTH_PORT_UUID = UUID
             .fromString("00001101-0000-1000-8000-00805f9b34fb");
@@ -145,7 +145,9 @@ public class BluetoothServices {
         stopThread.set(false);
     }
 
-    public String getCurrentLocation() {
-        return this.locationHistory.peek();
-    }
+// --Commented out by Inspection START (23/02/19 10:58 PM):
+//    public String getCurrentLocation() {
+//        return this.locationHistory.peek();
+//    }
+// --Commented out by Inspection STOP (23/02/19 10:58 PM)
 }

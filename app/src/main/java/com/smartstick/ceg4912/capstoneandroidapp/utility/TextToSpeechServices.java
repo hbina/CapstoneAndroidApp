@@ -10,7 +10,7 @@ import java.util.Locale;
 public class TextToSpeechServices {
 
     private TextToSpeech textToSpeech;
-    private MainActivity callerActivity;
+    private final MainActivity callerActivity;
 
     public TextToSpeechServices(MainActivity callerActivity) {
         this.callerActivity = callerActivity;

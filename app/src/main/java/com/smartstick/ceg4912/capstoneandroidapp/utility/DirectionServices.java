@@ -1,6 +1,5 @@
 package com.smartstick.ceg4912.capstoneandroidapp.utility;
 
-import android.app.Activity;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -10,32 +9,31 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
-import com.smartstick.ceg4912.capstoneandroidapp.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.w3c.dom.Text;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 public class DirectionServices {
 
-    private final static String SMART_STICK_URL = "http://Capstone4913-env.rpwrn4wmqm.us-east-2.elasticbeanstalk.com/path/getDirection";
-    private RequestQueue requestQueue;
-    private MainActivity callerActivity;
+    private final static String SMART_STICK_URL_DIRECTION = "http://Capstone4913-env.rpwrn4wmqm.us-east-2.elasticbeanstalk.com/path/getDirection";
+    private final static String SMART_STICK_URL_PATH = "http://Capstone4913-env.rpwrn4wmqm.us-east-2.elasticbeanstalk.com/path";
+    private final static String TAG = "DirectionServices";
+    private final RequestQueue requestQueue;
+    private final TextToSpeechServices textToSpeechServices;
 
-    public DirectionServices(MainActivity activity) {
+    public DirectionServices(MainActivity activity, TextToSpeechServices textToSpeechServices) {
         requestQueue = Volley.newRequestQueue(activity.getApplicationContext());
-        callerActivity = activity;
+        this.textToSpeechServices = textToSpeechServices;
     }
 
-    public void getDirectionFromDb(final String from, final String to, final TextToSpeechServices textToSpeechServices) {
-        Log.d(this.toString(), String.format("from:%s to:%s\n", from, to));
-        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
+    public void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
+        Log.d(this.toString(), String.format("currentRFID:%s nextNode:%s\n", currentRFID, nextNode));
+        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_DIRECTION,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -44,6 +42,56 @@ public class DirectionServices {
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
                             textToSpeechServices.logAndSpeak(String.format(Locale.ENGLISH, "turn %d to get to %s", bearing, direction));
+                        } catch (JSONException e) {
+                            Log.e(TAG, e.getMessage());
+                        }
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError e) {
+                Log.d(TAG,
+                        (e == null || e.getMessage() == null) ? "An unexpected error have occured" : e
+                                .getMessage());
+            }
+        }) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> pars = new HashMap<>();
+                pars.put("Content-Type", "application/x-www-form-urlencoded");
+                return pars;
+            }
+
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("current", currentRFID);
+                params.put("next", nextNode);
+                params.put("bearing", currentBearing);
+                return params;
+            }
+
+        };
+        requestQueue.add(jsonObjRequest);
+    }
+
+
+    public void cancelAll() {
+        if (requestQueue != null) {
+            requestQueue.cancelAll(TAG);
+        }
+    }
+
+    public void getDirectionFromDb(final String fromNode, final String toNode) {
+        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_PATH,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject reader = new JSONObject(response);
+                            JSONArray paths = reader.getJSONArray("Path");
+                            for (int i = 0; i < paths.length(); i++) {
+                                Log.d(TAG, String.format("%d. %s", i, paths.getString(i)));
+                            }
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
                         }
@@ -66,19 +114,12 @@ public class DirectionServices {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
-                params.put("from", from);
-                params.put("to", to);
+                params.put("from", fromNode);
+                params.put("to", toNode);
                 return params;
             }
 
         };
         requestQueue.add(jsonObjRequest);
-    }
-
-
-    public void cancelAll() {
-        if (requestQueue != null) {
-            requestQueue.cancelAll(this.toString());
-        }
     }
 }
