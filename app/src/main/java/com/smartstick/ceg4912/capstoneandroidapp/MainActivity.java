@@ -154,8 +154,12 @@ public class MainActivity extends Activity {
                         }
                         case LISTENING_FOR_NEW_DIRECTION: {
                             Log.d(TAG, "Listening for new direction");
-                            // directionServices.getDirectionFromDb(bluetoothServices.getLatestLocation(), voiceCommandServices.evaluateAsPlaces(generatedStrings));
-                            directionServices.getDirectionFromDb("ADA392FE", voiceCommandServices.evaluateAsPlaces(generatedStrings));
+                            // TODO: Replace with actual implementation
+                            if (!ServicesTerminal.getServicesTerminal().isLocationHistoryEmpty()) {
+                                directionServices.getDirectionFromDb(ServicesTerminal.getServicesTerminal().getLatestLocation(), voiceCommandServices.evaluateAsPlaces(generatedStrings));
+                            } else {
+                                Log.d(TAG, "Location history is empty...");
+                            }
                             current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             break;
                         }

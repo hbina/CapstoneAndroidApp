@@ -71,7 +71,7 @@ public class ServicesTerminal {
         return isBluetoothRunning.get();
     }
 
-    String getLatestLocation() {
+    public String getLatestLocation() {
         return this.locationHistory.peek();
     }
 
@@ -85,5 +85,17 @@ public class ServicesTerminal {
 
     float getCurrentBearing() {
         return this.currentBearing;
+    }
+
+    public boolean isLocationHistoryEmpty() {
+        return locationHistory.isEmpty();
+    }
+
+    public boolean isPathNodesEmpty() {
+        return nodesInPath.isEmpty();
+    }
+
+    public boolean isInputStreamProvided() {
+        return bluetoothInputStream == null;
     }
 }

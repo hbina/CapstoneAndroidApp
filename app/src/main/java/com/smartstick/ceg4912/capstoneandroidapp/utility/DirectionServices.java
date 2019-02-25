@@ -38,6 +38,7 @@ public class DirectionServices {
                     @Override
                     public void onResponse(String response) {
                         try {
+                            Log.d(TAG, "Response:" + response);
                             JSONObject reader = (new JSONObject(response)).getJSONObject("Navigation");
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
@@ -84,6 +85,7 @@ public class DirectionServices {
     }
 
     public void getDirectionFromDb(final String fromNode, final String toNode) {
+        Log.d(TAG, "Getting direction from Db fromNode:" + fromNode + " toNode:" + toNode);
         final ServicesTerminal servicesTerminal = ServicesTerminal.getServicesTerminal();
         servicesTerminal.setDestinationNode(toNode);
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_PATH,
@@ -95,7 +97,7 @@ public class DirectionServices {
                             JSONArray paths = reader.getJSONArray("Path");
                             servicesTerminal.clearPaths();
                             textToSpeechServices.logAndSpeak(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", fromNode, toNode));
-                            for (int i = 0; i < paths.length(); i++) {
+                            for (int i = paths.length() - 1; i > 0; i--) {
                                 textToSpeechServices.logAndSpeak(paths.getString(i));
                                 servicesTerminal.addNodeToPath(paths.getString(i));
                             }

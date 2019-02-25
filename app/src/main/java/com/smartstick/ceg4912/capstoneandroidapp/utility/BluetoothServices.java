@@ -82,6 +82,7 @@ public class BluetoothServices {
         try {
             socket = device.createRfcommSocketToServiceRecord(BLUETOOTH_PORT_UUID);
             socket.connect();
+            Log.d(TAG, "Connected to phone's socket");
         } catch (IOException e) {
             connected = false;
             Log.e(TAG, e.getMessage());
@@ -89,6 +90,7 @@ public class BluetoothServices {
         if (connected) {
             try {
                 ServicesTerminal.getServicesTerminal().setBluetoothInputStream(socket.getInputStream());
+                Log.d(TAG, "Provided ServicesTerminal with the inputStream");
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             }
