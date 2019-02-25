@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BearingServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothServices;
@@ -18,6 +19,8 @@ import com.smartstick.ceg4912.capstoneandroidapp.utility.ListeningForBluetoothTh
 import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.TextToSpeechServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 
@@ -44,17 +47,23 @@ public class MainActivity extends Activity {
     private EmergencyServices emergencyServices;
     private BearingServices bearingServices;
     private ListeningForBluetoothThread listeningForBluetoothThread;
+    private TextView emergencyNumberText;
+    private TextView bearingText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         BluetoothServices.initializeBluetooth(this);
         textToSpeechServices = new TextToSpeechServices(this);
         directionServices = new DirectionServices(this, this.textToSpeechServices);
         voiceCommandServices = new VoiceCommandServices(this);
         emergencyServices = new EmergencyServices(this);
         bearingServices = new BearingServices(this);
+        emergencyNumberText  = (TextView)findViewById(R.id.textView6);
+        bearingText= (TextView)findViewById(R.id.textView5);
+        emergencyNumberText.setText("Emergency Contact Number :"+ emergencyServices.getEmergencyNumber());
         listeningForBluetoothThread = new ListeningForBluetoothThread(directionServices);
         listeningForBluetoothThread.start();
         Log.d(TAG, "Executed thread");
@@ -93,7 +102,8 @@ public class MainActivity extends Activity {
                     new String[]{Manifest.permission.BLUETOOTH},
                     4);
         }
-        bearingServices.registerListener();
+        bearingServices.registerListener(bearingText);
+
     }
 
     @Override
@@ -116,6 +126,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+       emergencyNumberText.setText("Emergency Contact Number :"+ emergencyServices.getEmergencyNumber());
         switch (requestCode) {
             case REQ_CODE_SPEECH_OUT: {
                 if (data != null) {
@@ -129,15 +140,18 @@ public class MainActivity extends Activity {
                             switch (command) {
                                 case 0: {
                                     current_listening_state = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
+                                    textToSpeechServices.logAndForceSpeak("Please say the name of your destination.");
                                     voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
                                 case 1: {
+                                    textToSpeechServices.logAndForceSpeak("Please say the new emergency contact number.");
                                     current_listening_state = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
                                     voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
                                 case 2: {
+                                    textToSpeechServices.logAndForceSpeak("Sending emergency alert through SMS to the emergency contact number.");
                                     emergencyServices.sendEmergencySMS();
                                     break;
                                 }

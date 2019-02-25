@@ -21,7 +21,7 @@ public class EmergencyServices implements LocationListener {
     private double latitude;
     private double longitude;
     private final MainActivity callerActivity;
-    private String emergencyNumber;
+    private String emergencyNumber = "+1 000 000 0000";
 
     public EmergencyServices(MainActivity callerActivity) {
         this.latitude = 0.0f;
@@ -82,5 +82,9 @@ public class EmergencyServices implements LocationListener {
     public void setEmergencyNumber(String emergencyNumber) {
         Log.d(TAG, String.format("emergencyNumber:%s", emergencyNumber));
         this.emergencyNumber = emergencyNumber;
+    }
+
+    public String getEmergencyNumber(){
+        return emergencyNumber;
     }
 }
