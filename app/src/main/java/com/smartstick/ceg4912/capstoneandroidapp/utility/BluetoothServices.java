@@ -44,6 +44,7 @@ public class BluetoothServices {
     private static void beginBluetoothConnection(Activity callerActivity) {
         if (!findArduinoDevice(callerActivity)) {
             Log.d(TAG, "Cannot find Arduino device");
+            return;
         }
         if (!establishBluetoothInputSocket()) {
             Log.d(TAG, "Cannot establish connection to socket");

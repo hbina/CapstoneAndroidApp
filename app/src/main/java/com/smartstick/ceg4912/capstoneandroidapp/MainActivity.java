@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
     @Override
     public void onResume() {
         super.onResume();
+        // TODO: Perform permission check....if not satisfied, logAndSpeak and request for permission...for every resume.
         if (checkSelfPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission to access fine location is not granted");

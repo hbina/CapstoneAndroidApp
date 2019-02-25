@@ -18,6 +18,7 @@ public class ServicesTerminal {
     private ServicesTerminal() {
         this.nodesInPath = new Stack<>();
         this.locationHistory = new Stack<>();
+        this.destinationNode = new Stack<>();
         this.isBluetoothRunning = new AtomicBoolean(false);
     }
 
@@ -54,7 +55,7 @@ public class ServicesTerminal {
         nodesInPath.pop();
     }
 
-    public void setBluetoothInputStream(InputStream inputStream) {
+    void setBluetoothInputStream(InputStream inputStream) {
         bluetoothInputStream = inputStream;
     }
 

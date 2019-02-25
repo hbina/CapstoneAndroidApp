@@ -92,7 +92,9 @@ public class DirectionServices {
                             JSONObject reader = new JSONObject(response);
                             JSONArray paths = reader.getJSONArray("Path");
                             servicesTerminal.clearPaths();
+                            textToSpeechServices.logAndSpeak(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", fromNode, toNode));
                             for (int i = 0; i < paths.length(); i++) {
+                                textToSpeechServices.logAndSpeak(paths.getString(i));
                                 servicesTerminal.addNodeToPath(paths.getString(i));
                             }
                         } catch (JSONException e) {
