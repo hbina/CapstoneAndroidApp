@@ -5,7 +5,7 @@
 #include <SoftwareSerial.h>
 #include <SPI.h>
 #include <MFRC522.h>
-SoftwareSerial BTserial(6, 7); // RX | TX
+//SoftwareSerial BTserial(6, 7); // RX | TX
 
 #define SS_PIN 10
 #define RST_PIN 9
