@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
@@ -21,6 +22,7 @@ import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
 import java.util.ArrayList;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends Activity {
 
@@ -53,9 +55,9 @@ public class MainActivity extends Activity {
         voiceCommandServices = new VoiceCommandServices(this);
         emergencyServices = new EmergencyServices(this);
         bearingServices = new BearingServices(this);
-
         listeningForBluetoothThread = new ListeningForBluetoothThread(directionServices);
-        listeningForBluetoothThread.run();
+        listeningForBluetoothThread.start();
+        Log.d(TAG, "Executed thread");
     }
 
     @Override
@@ -65,19 +67,31 @@ public class MainActivity extends Activity {
         if (checkSelfPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission to access fine location is not granted");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1);
 
         }
         if (checkSelfPermission(
                 Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission to access coarse location is not granted");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    2);
         }
         if (checkSelfPermission(
                 Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission to send SMS");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.SEND_SMS},
+                    3);
         }
         if (checkSelfPermission(
                 Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission to use Bluetooth is not granted");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.BLUETOOTH},
+                    4);
         }
         bearingServices.registerListener();
     }
@@ -180,29 +194,8 @@ public class MainActivity extends Activity {
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_CODE_TURN_BLUETOOTH_ON: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                } else {
-                    Log.d(TAG, "Bluetooth permission have not been granted. Application will not function properly.");
-                }
-                break;
-            }
-
-            case REQUEST_CODE_GRANT_EMERGENCY_PERMISSIONS: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Always perform this check...
-                    Log.d(TAG, "Emergency request have been granted");
-                } else {
-                    Log.d(TAG,
-                            "Permission to send SMS is disabled. This is a very dangerous behavior. Another request to enable this should be made later.");
-                }
-                break;
-            }
-
             default: {
-                Log.e(TAG, "Unknwon requestCode:" + requestCode);
+                Log.e(TAG, String.format("Returned from requestCode:%d", requestCode));
                 break;
             }
         }

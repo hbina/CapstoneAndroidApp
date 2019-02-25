@@ -22,8 +22,8 @@ public class BearingServices implements SensorEventListener {
     }
 
     public void registerListener() {
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_NORMAL);
-        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD), SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_GAME);
     }
 
     public void unregisterListener() {
@@ -53,7 +53,11 @@ public class BearingServices implements SensorEventListener {
                 SensorManager.getOrientation(R, orientation);
                 float azimuth = (float) Math.toDegrees(orientation[0]);
                 azimuth = (azimuth + 360) % 360;
-                ServicesTerminal.getServicesTerminal().setCurrentBearing(azimuth);
+                float oldBearing = ServicesTerminal.getServicesTerminal().getCurrentBearing();
+                if (Math.abs(oldBearing - azimuth) > 10) {
+                    Log.d(TAG, String.format("oldBearing:%f newBearing:%f", oldBearing, azimuth));
+                    ServicesTerminal.getServicesTerminal().setCurrentBearing(azimuth);
+                }
             }
         }
     }

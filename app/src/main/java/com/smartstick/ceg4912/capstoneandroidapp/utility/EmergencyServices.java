@@ -71,7 +71,7 @@ public class EmergencyServices implements LocationListener {
                 smsManager.sendTextMessage(emergencyNumber, null, googleMapApiCall, null, null);
                 Log.d(TAG, "sending...");
             } else {
-                Log.e(TAG, "Permissions are not granted.");
+                Log.d(TAG, "Given emergency number is empty");
             }
         } else {
             Log.d(TAG, "Insufficient permission.");

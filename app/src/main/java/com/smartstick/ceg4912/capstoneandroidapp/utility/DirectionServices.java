@@ -41,7 +41,9 @@ public class DirectionServices {
                             JSONObject reader = (new JSONObject(response)).getJSONObject("Navigation");
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
-                            textToSpeechServices.logAndSpeak(String.format(Locale.ENGLISH, "turn %d to get to %s", bearing, direction));
+                            String toSpeak = String.format(Locale.ENGLISH, "turn %d to get to %s", bearing, direction);
+                            Log.d(TAG, toSpeak);
+                            textToSpeechServices.logAndSpeak(toSpeak);
                         } catch (JSONException e) {
                             Log.e(TAG, e.getMessage());
                         }
