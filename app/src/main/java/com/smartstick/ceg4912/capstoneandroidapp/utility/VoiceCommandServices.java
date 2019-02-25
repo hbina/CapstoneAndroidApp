@@ -50,20 +50,25 @@ public class VoiceCommandServices {
     }
 
     public int evaluateCommands(ArrayList<String> givenKeywords) {
-        PriorityQueue<Keyword> arrOfGivenKeywords = new PriorityQueue<>();
-        for (String trueKeyword : TRUE_KEYWORDS) {
-            for (String givenKeyword : givenKeywords) {
-                Keyword keyword = new Keyword(givenKeyword, trueKeyword);
-                arrOfGivenKeywords.add(keyword);
+        if (givenKeywords.size() > 0) {
+            PriorityQueue<Keyword> arrOfGivenKeywords = new PriorityQueue<>();
+            for (String trueKeyword : TRUE_KEYWORDS) {
+                for (String givenKeyword : givenKeywords) {
+                    Keyword keyword = new Keyword(givenKeyword, trueKeyword);
+                    arrOfGivenKeywords.add(keyword);
+                }
             }
-        }
-        Keyword answerKeyword = arrOfGivenKeywords.peek();
-        if (answerKeyword == null) {
-            return -1;
+            Keyword answerKeyword = arrOfGivenKeywords.poll();
+            if (answerKeyword == null) {
+                return -1;
+            } else {
+                String trueKeyword = answerKeyword.getTrueKeyword();
+                return map.get(trueKeyword);
+            }
         } else {
-            String trueKeyword = answerKeyword.getTrueKeyword();
-            return map.get(trueKeyword);
+            return -1;
         }
+
     }
 
     public String evaluateForNumber(ArrayList<String> generatedStrings) {

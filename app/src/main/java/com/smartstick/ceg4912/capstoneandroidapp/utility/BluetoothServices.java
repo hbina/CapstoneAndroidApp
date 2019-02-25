@@ -5,67 +5,53 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
-import android.os.Handler;
 import android.util.Log;
 
+import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
-import java.util.Stack;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BluetoothServices {
 
+    private static final String TAG = "BluetoothServices";
     private boolean isConnectedToBluetooth;
-    private BluetoothAdapter bluetoothAdapter;
-    private final Activity callerActivity;
-    private BluetoothDevice device;
-    private InputStream inputStream;
-    private BluetoothSocket socket;
-    private final AtomicBoolean stopThread;
-    private int byteCount;
-    private final Stack<String> locationHistory;
+    private static BluetoothDevice device;
+    private static BluetoothSocket socket;
 
     private static final UUID BLUETOOTH_PORT_UUID = UUID
             .fromString("00001101-0000-1000-8000-00805f9b34fb");
     private static final String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
 
-    public BluetoothServices(Activity callerActivity) {
-        this.isConnectedToBluetooth = false;
-        this.bluetoothAdapter = null;
-        this.callerActivity = callerActivity;
-        this.device = null;
-        this.inputStream = null;
-        this.socket = null;
-        this.stopThread = new AtomicBoolean();
-        this.byteCount = 0;
-        this.locationHistory = new Stack<>();
-        this.locationHistory.push("ADA392FE");
+    public static void initializeBluetooth(Activity callerActivity) {
+        checkIfBluetoothCapable(callerActivity);
+        beginBluetoothConnection(callerActivity);
     }
 
-    public void init(int returnCode) {
+    private static void checkIfBluetoothCapable(Activity callerActivity) {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
-            Log.d(this.toString(), "Phone does not have Bluetooth adapter");
+            Log.d(TAG, "Phone does not have Bluetooth adapter");
         } else {
             if (!bluetoothAdapter.isEnabled()) {
                 Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                callerActivity.startActivityForResult(turnBTon, returnCode);
+                callerActivity.startActivityForResult(turnBTon, MainActivity.REQUEST_CODE_TURN_BLUETOOTH_ON);
             }
         }
     }
 
-    public void beginBluetoothConnection() {
-        if (!isConnectedToBluetooth && findArduinoDevice() && establishBluetoothInputSocket()) {
-            isConnectedToBluetooth = true;
-            createListeningThread();
+    private static void beginBluetoothConnection(Activity callerActivity) {
+        if (!findArduinoDevice(callerActivity)) {
+            Log.d(TAG, "Cannot find Arduino device");
+        }
+        if (!establishBluetoothInputSocket()) {
+            Log.d(TAG, "Cannot establish connection to socket");
         }
     }
 
-    private boolean findArduinoDevice() {
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+    private static boolean findArduinoDevice(Activity callerActivity) {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             return false;
         } else {
@@ -75,79 +61,37 @@ public class BluetoothServices {
             }
             Set<BluetoothDevice> connectedDevices = bluetoothAdapter.getBondedDevices();
             if (connectedDevices.isEmpty()) {
-                Log.d(this.toString(), "No Bluetooth device is connected to the phone");
+                Log.d(TAG, "No Bluetooth device is connected to the phone");
             } else {
                 for (BluetoothDevice iterator : connectedDevices) {
                     if (iterator.getAddress().equals(DEVICE_ADDRESS)) {
-                        Log.d(this.toString(), "Successfully found the required device");
+                        Log.d(TAG, "Successfully found the required device");
                         device = iterator;
                         return true;
                     }
                 }
-                Log.d(this.toString(), "Cannot find the required device");
+                Log.d(TAG, "Cannot find the required device");
             }
             return false;
         }
     }
 
-    private boolean establishBluetoothInputSocket() {
+    private static boolean establishBluetoothInputSocket() {
         boolean connected = true;
         try {
             socket = device.createRfcommSocketToServiceRecord(BLUETOOTH_PORT_UUID);
             socket.connect();
         } catch (IOException e) {
             connected = false;
-            Log.e(this.toString(), e.getMessage());
+            Log.e(TAG, e.getMessage());
         }
         if (connected) {
             try {
-                inputStream = socket.getInputStream();
+                ServicesTerminal.getServicesTerminal().setBluetoothInputStream(socket.getInputStream());
             } catch (IOException e) {
-                Log.e(this.toString(), e.getMessage());
+                Log.e(TAG, e.getMessage());
             }
-
         }
         return connected;
     }
-
-    private void createListeningThread() {
-        final Handler handler = new Handler();
-        Thread thread = new Thread(new Runnable() {
-            public void run() {
-                while (!Thread.currentThread().isInterrupted() && !stopThread.get()) {
-                    try {
-                        byteCount = inputStream.available();
-                        if (byteCount > 0) {
-                            byte[] rawBytes = new byte[byteCount];
-                            final int read = inputStream.read(rawBytes);
-                            final String receivedString = new String(rawBytes, StandardCharsets.UTF_8);
-                            handler.post(new Runnable() {
-                                public void run() {
-                                    // TODO: Additional check of current time
-                                    if (!locationHistory.peek().equals(receivedString)) {
-                                        locationHistory.push(receivedString);
-                                    }
-                                }
-                            });
-                        }
-                    } catch (IOException e) {
-                        Log.e(this.toString(), e.getMessage());
-                    }
-                }
-                Log.d(this.toString(), "Thread have finished running");
-            }
-        });
-        thread.start();
-    }
-
-    public void killBluetooth() {
-        // TODO: Kill listening thread, preferably when user have arrived at the destination
-        stopThread.set(false);
-    }
-
-// --Commented out by Inspection START (23/02/19 10:58 PM):
-//    public String getCurrentLocation() {
-//        return this.locationHistory.peek();
-//    }
-// --Commented out by Inspection STOP (23/02/19 10:58 PM)
 }

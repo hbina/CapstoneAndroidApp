@@ -9,9 +9,12 @@ import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 
+import com.smartstick.ceg4912.capstoneandroidapp.utility.BearingServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.DirectionServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.EmergencyServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ListeningForBluetoothThread;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.TextToSpeechServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
 
@@ -19,13 +22,10 @@ import java.util.ArrayList;
 
 import androidx.annotation.NonNull;
 
-import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_GRANT_EMERGENCY_PERMISSIONS;
-import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_TURN_BLUETOOTH_ON;
-
 public class MainActivity extends Activity {
 
-
-    private static final String TAG = "MainActivity";
+    public static final int REQUEST_CODE_TURN_BLUETOOTH_ON = 0;
+    public static final int REQUEST_CODE_GRANT_EMERGENCY_PERMISSIONS = 1;
 
     private enum LISTENING_STATE {
         LISTENING_FOR_COMMANDS,
@@ -33,24 +33,29 @@ public class MainActivity extends Activity {
         LISTENING_FOR_EMERGENCY_NUMBER
     }
 
-    private LISTENING_STATE listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+    private static final String TAG = "MainActivity";
+    private LISTENING_STATE current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
     private final static int REQ_CODE_SPEECH_OUT = 0;
     private TextToSpeechServices textToSpeechServices;
-    private BluetoothServices bluetoothServices;
     private DirectionServices directionServices;
     private VoiceCommandServices voiceCommandServices;
     private EmergencyServices emergencyServices;
+    private BearingServices bearingServices;
+    private ListeningForBluetoothThread listeningForBluetoothThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        BluetoothServices.initializeBluetooth(this);
         textToSpeechServices = new TextToSpeechServices(this);
-        bluetoothServices = new BluetoothServices(this);
-        bluetoothServices.init(REQUEST_CODE_TURN_BLUETOOTH_ON);
         directionServices = new DirectionServices(this, this.textToSpeechServices);
         voiceCommandServices = new VoiceCommandServices(this);
         emergencyServices = new EmergencyServices(this);
+        bearingServices = new BearingServices(this);
+
+        listeningForBluetoothThread = new ListeningForBluetoothThread(directionServices);
+        listeningForBluetoothThread.run();
     }
 
     @Override
@@ -69,12 +74,23 @@ public class MainActivity extends Activity {
                 Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission to send SMS");
         }
+        if (checkSelfPermission(
+                Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permission to use Bluetooth is not granted");
+        }
+        bearingServices.registerListener();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        bearingServices.unregisterListener();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        bluetoothServices.killBluetooth();
+        ServicesTerminal.getServicesTerminal().setIsBluetoothRunning(false);
         directionServices.cancelAll();
     }
 
@@ -86,28 +102,23 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
-            case RESULT_OK: {
-                Log.d(TAG, "Result was OK...whatever that means");
-                break;
-            }
-
             case REQ_CODE_SPEECH_OUT: {
                 if (data != null) {
                     ArrayList<String> generatedStrings = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     Log.d(TAG, String.format("generatedString:%s", generatedStrings.toString()));
-                    switch (listening_state) {
+                    switch (current_listening_state) {
                         case LISTENING_FOR_COMMANDS: {
                             Log.d(TAG, "Listening for commands");
                             int command = voiceCommandServices.evaluateCommands(generatedStrings);
                             switch (command) {
                                 case 0: {
-                                    listening_state = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
+                                    current_listening_state = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
                                     voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
                                 case 1: {
-                                    listening_state = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
+                                    current_listening_state = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
                                     voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
@@ -128,9 +139,9 @@ public class MainActivity extends Activity {
                         }
                         case LISTENING_FOR_NEW_DIRECTION: {
                             Log.d(TAG, "Listening for new direction");
-                            // directionServices.getDirectionFromDb(bluetoothServices.getCurrentLocation(), voiceCommandServices.evaluateAsPlaces(generatedStrings));
+                            // directionServices.getDirectionFromDb(bluetoothServices.getLatestLocation(), voiceCommandServices.evaluateAsPlaces(generatedStrings));
                             directionServices.getDirectionFromDb("ADA392FE", voiceCommandServices.evaluateAsPlaces(generatedStrings));
-                            listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             break;
                         }
                         case LISTENING_FOR_EMERGENCY_NUMBER: {
@@ -141,11 +152,11 @@ public class MainActivity extends Activity {
                             } else {
                                 emergencyServices.setEmergencyNumber(emergencyNumber);
                             }
-                            listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             break;
                         }
                         default: {
-                            listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             Log.d(TAG, "State machine is broken");
                             break;
                         }
@@ -171,7 +182,6 @@ public class MainActivity extends Activity {
             case REQUEST_CODE_TURN_BLUETOOTH_ON: {
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    bluetoothServices.beginBluetoothConnection();
                 } else {
                     Log.d(TAG, "Bluetooth permission have not been granted. Application will not function properly.");
                 }
@@ -195,11 +205,5 @@ public class MainActivity extends Activity {
                 break;
             }
         }
-    }
-
-    static class RequestCodes {
-        static final int REQUEST_CODE_TURN_BLUETOOTH_ON = 0;
-        static final int REQUEST_CODE_GRANT_EMERGENCY_PERMISSIONS = 1;
-
     }
 }

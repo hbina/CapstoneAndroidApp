@@ -7,8 +7,10 @@ import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 
 import java.util.Locale;
 
+// TODO: Make this run on its own thread?
 public class TextToSpeechServices {
 
+    private static final String TAG = "TextToSpeechServices";
     private TextToSpeech textToSpeech;
     private final MainActivity callerActivity;
 
@@ -25,19 +27,19 @@ public class TextToSpeechServices {
                     textToSpeech.setLanguage(Locale.US);
                 } else {
                     String errorStatus = "Failed to initialize textToSpeech with status:" + status;
-                    Log.d(this.toString(), errorStatus);
+                    Log.d(TAG, errorStatus);
                 }
             }
         });
     }
 
     public void logAndSpeak(String toSpeak) {
-        Log.d(this.toString(), toSpeak);
+        Log.d(TAG, toSpeak);
         textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_ADD, null, null);
     }
 
     public void logAndForceSpeak(String toSpeak) {
-        Log.d(this.toString(), toSpeak);
+        Log.d(TAG, toSpeak);
         textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 }

@@ -33,10 +33,6 @@ public class Keyword implements Comparable<Keyword> {
         return this.trueKeyword;
     }
 
-    public int getScore() {
-        return this.score;
-    }
-
     @Override
     public int compareTo(Keyword o) {
         return Integer.compare(o.score, this.score);

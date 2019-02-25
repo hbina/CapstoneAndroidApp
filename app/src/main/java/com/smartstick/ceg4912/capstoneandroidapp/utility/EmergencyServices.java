@@ -35,23 +35,23 @@ public class EmergencyServices implements LocationListener {
             latitude = location.getLatitude();
             longitude = location.getLongitude();
         } else {
-            Log.e(this.toString(), "location is null");
+            Log.e(TAG, "location is null");
         }
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-        Log.d(this.toString(), String.format(Locale.ENGLISH, "provider:%s have been disabled", provider));
+        Log.d(TAG, String.format(Locale.ENGLISH, "provider:%s have been disabled", provider));
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        Log.d(this.toString(), String.format(Locale.ENGLISH, "provider:%s have been enabled", provider));
+        Log.d(TAG, String.format(Locale.ENGLISH, "provider:%s have been enabled", provider));
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Log.d(this.toString(), String.format(Locale.ENGLISH, "provider:%s extras:%s", provider, extras.toString()));
+        Log.d(TAG, String.format(Locale.ENGLISH, "provider:%s extras:%s", provider, extras.toString()));
     }
 
     public void sendEmergencySMS() {
@@ -71,7 +71,7 @@ public class EmergencyServices implements LocationListener {
                 smsManager.sendTextMessage(emergencyNumber, null, googleMapApiCall, null, null);
                 Log.d(TAG, "sending...");
             } else {
-                Log.e(this.toString(), "Permissions are not granted.");
+                Log.e(TAG, "Permissions are not granted.");
             }
         } else {
             Log.d(TAG, "Insufficient permission.");

@@ -31,7 +31,7 @@ public class DirectionServices {
         this.textToSpeechServices = textToSpeechServices;
     }
 
-    public void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
+    void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
         Log.d(this.toString(), String.format("currentRFID:%s nextNode:%s\n", currentRFID, nextNode));
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_DIRECTION,
                 new Response.Listener<String>() {
@@ -82,6 +82,8 @@ public class DirectionServices {
     }
 
     public void getDirectionFromDb(final String fromNode, final String toNode) {
+        final ServicesTerminal servicesTerminal = ServicesTerminal.getServicesTerminal();
+        servicesTerminal.setDestinationNode(toNode);
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_PATH,
                 new Response.Listener<String>() {
                     @Override
@@ -89,8 +91,9 @@ public class DirectionServices {
                         try {
                             JSONObject reader = new JSONObject(response);
                             JSONArray paths = reader.getJSONArray("Path");
+                            servicesTerminal.clearPaths();
                             for (int i = 0; i < paths.length(); i++) {
-                                Log.d(TAG, String.format("%d. %s", i, paths.getString(i)));
+                                servicesTerminal.addNodeToPath(paths.getString(i));
                             }
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
