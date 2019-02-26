@@ -2,240 +2,195 @@ package com.smartstick.ceg4912.capstoneandroidapp;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.speech.RecognizerIntent;
-import android.speech.tts.TextToSpeech;
-import android.telephony.SmsManager;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.BearingServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.DirectionServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.EmergencyServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ListeningForBluetoothThread;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.TextToSpeechServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.ArrayList;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
-import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_PERMISSION_SEND_SMS;
-import static com.smartstick.ceg4912.capstoneandroidapp.MainActivity.RequestCodes.REQUEST_CODE_TURN_BLUETOOTH_ON;
+public class MainActivity extends Activity {
 
-public class MainActivity extends Activity implements LocationListener {
+    public static final int REQUEST_CODE_TURN_BLUETOOTH_ON = 0;
+    public static final int REQUEST_CODE_GRANT_EMERGENCY_PERMISSIONS = 1;
 
-    private final static String SMART_STICK_URL = "http://SmartWalkingStick-env.irckrevpyt.us-east-1.elasticbeanstalk.com/path";
-    private final static int REQ_CODE_SPEECH_OUT = 143;
-    private static RequestQueue requestQueue;
-    private static double latitude;
-    private static double longtitude;
-    private TextToSpeech textToSpeech;
-    private String emergencyNumber;
-    private BluetoothServices bluetoothServices;
+    private enum LISTENING_STATE {
+        LISTENING_FOR_COMMANDS,
+        LISTENING_FOR_NEW_DIRECTION,
+        LISTENING_FOR_EMERGENCY_NUMBER
+    }
+
+    private static final String TAG = "MainActivity";
+    private LISTENING_STATE current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+    private final static int REQ_CODE_SPEECH_OUT = 0;
+    private TextToSpeechServices textToSpeechServices;
+    private DirectionServices directionServices;
+    private VoiceCommandServices voiceCommandServices;
+    private EmergencyServices emergencyServices;
+    private BearingServices bearingServices;
+    private ListeningForBluetoothThread listeningForBluetoothThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initializedTextToSpeech();
-        bluetoothServices = new BluetoothServices(this);
-        bluetoothServices.init(REQUEST_CODE_TURN_BLUETOOTH_ON);
-    }
-
-    private void initializedTextToSpeech() {
-        textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status != TextToSpeech.ERROR) {
-                    textToSpeech.setLanguage(Locale.US);
-                } else {
-                    String errorStatus = "Failed to initialize textToSpeech with status:" + status;
-                    Log.d(this.toString(), errorStatus);
-                }
-            }
-        });
+        BluetoothServices.initializeBluetooth(this);
+        textToSpeechServices = new TextToSpeechServices(this);
+        directionServices = new DirectionServices(this, this.textToSpeechServices);
+        voiceCommandServices = new VoiceCommandServices(this);
+        emergencyServices = new EmergencyServices(this);
+        bearingServices = new BearingServices(this);
+        listeningForBluetoothThread = new ListeningForBluetoothThread(directionServices);
+        listeningForBluetoothThread.start();
+        Log.d(TAG, "Executed thread");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        requestQueue = Volley.newRequestQueue(getApplicationContext());
+        // TODO: Perform permission check....if not satisfied, logAndSpeak and request for permission...for every resume.
+        if (checkSelfPermission(
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permission to access fine location is not granted");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1);
+
+        }
+        if (checkSelfPermission(
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permission to access coarse location is not granted");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    2);
+        }
+        if (checkSelfPermission(
+                Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permission to send SMS");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.SEND_SMS},
+                    3);
+        }
+        if (checkSelfPermission(
+                Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "Permission to use Bluetooth is not granted");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.BLUETOOTH},
+                    4);
+        }
+        bearingServices.registerListener();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        bearingServices.unregisterListener();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        bluetoothServices.killBluetooth();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (requestQueue != null) {
-            requestQueue.cancelAll(this.toString());
-        }
-    }
-
-    public void onSync(View v) {
-        Log.d(this.toString(), "User pressed onSync()");
+        ServicesTerminal.getServicesTerminal().setIsBluetoothRunning(false);
+        directionServices.cancelAll();
     }
 
     public void onVoice(View v) {
-        openMic();
-    }
-
-    public void onSos(View v) {
-        sendEmergencySMS(emergencyNumber);
-    }
-
-    /*
-    Voice Control
-     */
-    private void openMic() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, R.string.please_enter_the_destination);
-
-        try {
-            startActivityForResult(intent, REQ_CODE_SPEECH_OUT);
-        } catch (ActivityNotFoundException e) {
-            Log.d(this.toString(), e.getMessage());
-        }
+        voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
-            case RESULT_OK: {
-                Log.d(this.toString(), "Result was OK...whatever that means");
-                break;
-            }
-
             case REQ_CODE_SPEECH_OUT: {
                 if (data != null) {
-                    String currentLocation = "";
-                    getDirectionFromDb(currentLocation, VoiceCommandServices.evaluate(data
-                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)));
+                    ArrayList<String> generatedStrings = data
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    Log.d(TAG, String.format("generatedString:%s", generatedStrings.toString()));
+                    switch (current_listening_state) {
+                        case LISTENING_FOR_COMMANDS: {
+                            Log.d(TAG, "Listening for commands");
+                            int command = voiceCommandServices.evaluateCommands(generatedStrings);
+                            switch (command) {
+                                case 0: {
+                                    current_listening_state = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
+                                    voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
+                                    break;
+                                }
+                                case 1: {
+                                    current_listening_state = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
+                                    voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
+                                    break;
+                                }
+                                case 2: {
+                                    emergencyServices.sendEmergencySMS();
+                                    break;
+                                }
+                                case 3: {
+                                    // TODO : Vibrate stuff
+                                    break;
+                                }
+                                default: {
+                                    Log.d(TAG, String.format("Unknown command. Given array contains:%s", generatedStrings.toString()));
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                        case LISTENING_FOR_NEW_DIRECTION: {
+                            Log.d(TAG, "Listening for new direction");
+                            // TODO: Replace with actual implementation
+                            if (!ServicesTerminal.getServicesTerminal().isLocationHistoryEmpty()) {
+                                directionServices.getDirectionFromDb(ServicesTerminal.getServicesTerminal().getLatestLocation(), voiceCommandServices.evaluateAsPlaces(generatedStrings));
+                            } else {
+                                Log.d(TAG, "Location history is empty...");
+                            }
+                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            break;
+                        }
+                        case LISTENING_FOR_EMERGENCY_NUMBER: {
+                            Log.d(TAG, "Listening for emergency number");
+                            String emergencyNumber = voiceCommandServices.evaluateForNumber(generatedStrings);
+                            if (emergencyNumber == null) {
+                                textToSpeechServices.logAndForceSpeak("An error have occured. Please try again.");
+                            } else {
+                                emergencyServices.setEmergencyNumber(emergencyNumber);
+                            }
+                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            break;
+                        }
+                        default: {
+                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            Log.d(TAG, "State machine is broken");
+                            break;
+                        }
+                    }
                 } else {
-                    logAndSpeak(getString(R.string.DATA_WAS_NULL));
+                    Log.d(TAG, "Data is null");
                 }
                 break;
             }
             default: {
-                Log.d(this.toString(),
+                Log.d(TAG,
                         "Unknown request code...defaulting. The requestCode was " + requestCode);
                 break;
             }
         }
-    }
-
-    /*
-    Database queries
-     */
-    private void getDirectionFromDb(final String from, final String to) {
-        StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL,
-                new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
-                        try {
-                            JSONObject reader = new JSONObject(response);
-                            JSONArray contacts = reader.getJSONArray("Path");
-                            logAndSpeak("there are " + contacts.length() + " nodes you have to visit. They are:");
-                            for (int i = 0; i < contacts.length(); i++) {
-                                logAndSpeak(contacts.getString(i));
-                                if (i != contacts.length() - 1) {
-                                    logAndSpeak("then");
-                                }
-                            }
-                        } catch (JSONException e) {
-                            Log.e(this.toString(), e.getMessage());
-                        }
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError e) {
-                Log.d(this.toString(),
-                        (e == null || e.getMessage() == null) ? "An unexpected error have occured" : e
-                                .getMessage());
-            }
-        }) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> pars = new HashMap<>();
-                pars.put("Content-Type", "application/x-www-form-urlencoded");
-                return pars;
-            }
-
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put(getString(R.string.http_request_api_param_from), from);
-                params.put(getString(R.string.http_request_api_param_to), to);
-                return params;
-            }
-
-        };
-        requestQueue.add(jsonObjRequest);
-    }
-
-    private void logAndSpeak(String toSpeak) {
-        Log.d(this.toString(), toSpeak);
-        textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_ADD, null, null);
-    }
-
-    private void logAndForceSpeak(String toSpeak) {
-        Log.d(this.toString(), toSpeak);
-        textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
-    }
-
-    /**
-     * MINGWEI
-     */
-    private void sendEmergencySMS(String phoneNumber) {
-        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        if (
-                checkSelfPermission(
-                        Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                        checkSelfPermission(
-                                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(
-                        Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS},
-                    1);
-            Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            onLocationChanged(location);
-            String googleMapApiCall = "https://www.google.com/maps/?q=" + latitude + "," + longtitude;
-            if (!TextUtils.isEmpty(phoneNumber) && !TextUtils.isEmpty(googleMapApiCall)) {
-                SmsManager smsManager = SmsManager.getDefault();
-                smsManager.sendTextMessage(phoneNumber, null, googleMapApiCall, null, null);
-            } else {
-                Log.e(this.toString(), "Permissions are not granted.");
-            }
-        }
-
     }
 
     @Override
@@ -243,63 +198,10 @@ public class MainActivity extends Activity implements LocationListener {
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
         switch (requestCode) {
-            case REQUEST_CODE_TURN_BLUETOOTH_ON: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    bluetoothServices.beginBluetoothConnection();
-                } else {
-                    Log.d(this.toString(), "Bluetooth permission have not been granted. Application will not function properly.");
-                }
-                break;
-            }
-
-            case REQUEST_CODE_PERMISSION_SEND_SMS: {
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(this.toString(), "Bluetooth have been turned on");
-                } else {
-                    Log.d(this.toString(),
-                            "Permission to send SMS is disabled. This is a very dangerous behavior. Another request to enable this should be made later.");
-                }
-                break;
-            }
-
             default: {
-                Log.e(this.toString(), "Unknwon requestCode:" + requestCode);
+                Log.e(TAG, String.format("Returned from requestCode:%d", requestCode));
                 break;
             }
         }
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        if (location != null) {
-            latitude = location.getLatitude();
-            longtitude = location.getLongitude();
-        } else {
-            Log.e(this.toString(), "location is null");
-        }
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-        Log.d(this.toString(), "Provider have been disabled.");
-        Log.d(this.toString(), "provider:" + provider);
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-        Log.d(this.toString(), "Provider have been enabled.");
-        Log.d(this.toString(), "provider:" + provider);
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-    }
-
-    static class RequestCodes {
-        static final int REQUEST_CODE_TURN_BLUETOOTH_ON = 0;
-        static final int REQUEST_CODE_PERMISSION_SEND_SMS = 1;
-
     }
 }
