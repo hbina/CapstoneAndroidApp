@@ -1,17 +1,11 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
+import android.app.Activity;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
-import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
-
-import org.w3c.dom.Text;
-
 import java.util.Locale;
-import java.util.Stack;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 // TODO: Make this run on its own thread?
 public class SpeechServices extends Services {
@@ -21,12 +15,12 @@ public class SpeechServices extends Services {
     private final static ConcurrentLinkedQueue<String> queue = new ConcurrentLinkedQueue<>();
     private TextToSpeech textToSpeech;
 
-    public SpeechServices() {
-        initializedTextToSpeech();
+    public SpeechServices(Activity activity) {
+        initializedTextToSpeech(activity);
     }
 
-    private void initializedTextToSpeech() {
-        textToSpeech = new TextToSpeech(ServicesTerminal.getServicesTerminal().getCallerActivity(), new TextToSpeech.OnInitListener() {
+    private void initializedTextToSpeech(Activity activity) {
+        textToSpeech = new TextToSpeech(activity, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
                 if (status != TextToSpeech.ERROR) {

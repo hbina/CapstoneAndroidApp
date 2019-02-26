@@ -1,5 +1,7 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
+import android.app.Activity;
+import android.content.Context;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -8,9 +10,9 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,8 +34,8 @@ public class RequestServices extends Services {
 
     private final RequestQueue requestQueue;
 
-    public RequestServices() {
-        requestQueue = Volley.newRequestQueue(ServicesTerminal.getServicesTerminal().getCallerActivity().getApplicationContext());
+    public RequestServices(Context context) {
+        requestQueue = Volley.newRequestQueue(context);
     }
 
     private void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
@@ -92,8 +94,6 @@ public class RequestServices extends Services {
 
     private void getDirectionFromDb(final String fromNode, final String toNode) {
         Log.d(TAG, "Getting direction from Db fromNode:" + fromNode + " toNode:" + toNode);
-        final ServicesTerminal servicesTerminal = ServicesTerminal.getServicesTerminal();
-        servicesTerminal.setDestinationNode(toNode);
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_PATH,
                 new Response.Listener<String>() {
                     @Override
@@ -101,11 +101,10 @@ public class RequestServices extends Services {
                         try {
                             JSONObject reader = new JSONObject(response);
                             JSONArray paths = reader.getJSONArray("Path");
-                            servicesTerminal.clearPaths();
                             SpeechServices.addText(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", fromNode, toNode));
                             for (int i = paths.length() - 1; i > 0; i--) {
                                 SpeechServices.addText(paths.getString(i));
-                                servicesTerminal.addNodeToPath(paths.getString(i));
+                                // TODO: Add paths somewhere...preferably DirectionServices...
                             }
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
@@ -140,6 +139,7 @@ public class RequestServices extends Services {
 
     @Override
     public void run() {
+        super.run();
         while (isRunning.get()) {
             if (!bearingQueue.isEmpty()) {
                 BearingRequest bearingRequest = bearingQueue.poll();

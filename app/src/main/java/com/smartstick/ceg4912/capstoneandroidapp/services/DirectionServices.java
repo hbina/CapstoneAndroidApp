@@ -4,14 +4,15 @@ import android.util.Log;
 
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothConnector;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Stack;
 
 public class DirectionServices extends Services {
 
     private final static String TAG = "DirectionServices";
+    private final static Stack<String> locationHistory = new Stack<>();
 
     public DirectionServices() {
         BluetoothConnector.initializeBluetooth();
@@ -19,24 +20,24 @@ public class DirectionServices extends Services {
 
     @Override
     public void run() {
-        ServicesTerminal servicesTerminal = ServicesTerminal.getServicesTerminal();
-        servicesTerminal.setIsBluetoothRunning(true);
+        super.run();
         while (isRunning.get()) {
             try {
-                if (!servicesTerminal.isInputStreamProvided()) {
-                    int availableBytes = servicesTerminal.getBluetoothInputStream().available();
+                if (BluetoothConnector.getInputStream() != null) {
+                    int availableBytes = BluetoothConnector.getInputStream().available();
                     if (availableBytes > 0) {
                         Log.d(TAG, String.format("Received something from Bluetooth of size:%d", availableBytes));
                         byte[] rawBytes = new byte[availableBytes];
-                        final int i = servicesTerminal.getBluetoothInputStream().read(rawBytes);
+                        final int i = BluetoothConnector.getInputStream().read(rawBytes);
                         final String receivedString = (new String(rawBytes, StandardCharsets.UTF_8)).substring(1);
                         if (receivedString.length() > 1) {
                             Log.d(TAG, "receivedString:" + receivedString);
-                            if (servicesTerminal.isLocationHistoryEmpty()) {
-                                servicesTerminal.addLocationHistory(receivedString);
+                            // TODO: Rewrite this...make it a lot simpler than this...
+                            if (locationHistory.isEmpty()) {
+                                locationHistory.add(receivedString);
                             } else {
-                                if (!servicesTerminal.getLatestLocation().equals(receivedString)) {
-                                    servicesTerminal.addLocationHistory(receivedString);
+                                if (!locationHistory.peek().equals(receivedString)) {
+                                    locationHistory.add(receivedString);
                                     if (servicesTerminal.isPathNodesEmpty()) {
                                         Log.d(TAG, "User have already arrived");
                                     } else {
@@ -58,6 +59,8 @@ public class DirectionServices extends Services {
         Log.d(TAG, "Thread have finished running");
     }
 
+
+    // TODO: For the love of God please rework this wonky crud
     private static String decodeNodeNameToId(String peekNodesInPath) {
         switch (peekNodesInPath) {
             case "A":
@@ -78,5 +81,9 @@ public class DirectionServices extends Services {
                 return "F3A0A775";
         }
         return null;
+    }
+
+    public static String getCurrentLocation() {
+        return locationHistory.peek();
     }
 }

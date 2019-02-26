@@ -11,6 +11,7 @@ import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.services.Services;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ public class BluetoothConnector {
     private static final String TAG = "BluetoothConnector";
     private static BluetoothDevice device;
     private static BluetoothSocket socket;
-
+    private static InputStream inputStream;
     private static final UUID BLUETOOTH_PORT_UUID = UUID
             .fromString("00001101-0000-1000-8000-00805f9b34fb");
     private static final String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
@@ -89,12 +90,16 @@ public class BluetoothConnector {
         }
         if (connected) {
             try {
-                ServicesTerminal.getServicesTerminal().setBluetoothInputStream(socket.getInputStream());
+                inputStream = socket.getInputStream();
                 Log.d(TAG, "Provided ServicesTerminal with the inputStream");
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
             }
         }
         return connected;
+    }
+
+    public static InputStream getInputStream() {
+        return inputStream;
     }
 }

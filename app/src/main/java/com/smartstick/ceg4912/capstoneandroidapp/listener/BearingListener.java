@@ -8,13 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 
-import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
-
-import java.util.BitSet;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 
 public class BearingListener implements SensorEventListener {
 
@@ -25,9 +19,9 @@ public class BearingListener implements SensorEventListener {
     private SensorManager sensorManager;
     private AtomicInteger currentBearing;
 
-    public BearingListener() {
+    public BearingListener(Activity activity) {
         this.currentBearing = new AtomicInteger(0);
-        this.sensorManager = (SensorManager) ServicesTerminal.getServicesTerminal().getCallerActivity().getSystemService(Context.SENSOR_SERVICE);
+        this.sensorManager = (SensorManager) activity.getSystemService(Context.SENSOR_SERVICE);
     }
 
     public void registerListener() {
@@ -63,9 +57,8 @@ public class BearingListener implements SensorEventListener {
                 SensorManager.getOrientation(R, orientation);
                 float azimuth = (float) Math.toDegrees(orientation[0]);
                 azimuth = (azimuth + 360) % 360;
-                float oldBearing = ServicesTerminal.getServicesTerminal().getCurrentBearing();
-                if (Math.abs(oldBearing - azimuth) > 10) {
-                    Log.d(TAG, String.format("oldBearing:%f newBearing:%f", oldBearing, azimuth));
+                if (Math.abs(currentBearing.get() - azimuth) > 10) {
+                    Log.d(TAG, String.format("oldBearing:%d newBearing:%f", currentBearing.get(), azimuth));
                     currentBearing.set((int) azimuth);
                 }
             }
