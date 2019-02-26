@@ -1,5 +1,8 @@
 package com.smartstick.ceg4912.capstoneandroidapp.utility;
 
+import android.app.Activity;
+import android.content.Context;
+
 import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Stack;
@@ -14,6 +17,7 @@ public class ServicesTerminal {
     private AtomicBoolean isBluetoothRunning;
     private Stack<String> locationHistory; // TODO: Write to DB over some regular intervals
     private float currentBearing;
+    private Activity callerActivity;
 
     private ServicesTerminal() {
         this.nodesInPath = new Stack<>();
@@ -31,7 +35,7 @@ public class ServicesTerminal {
         return servicesTerminal;
     }
 
-    void setDestinationNode(String destination) {
+    public void setDestinationNode(String destination) {
         destinationNode.add(destination);
     }
 
@@ -39,27 +43,27 @@ public class ServicesTerminal {
         return destinationNode.peek();
     }
 
-    void clearPaths() {
+    public void clearPaths() {
         nodesInPath.clear();
     }
 
-    void addNodeToPath(String node) {
+    public void addNodeToPath(String node) {
         nodesInPath.add(node);
     }
 
-    String peekNodesInPath() {
+    public String peekNodesInPath() {
         return nodesInPath.peek();
     }
 
-    void popNodeInPath() {
+    public void popNodeInPath() {
         nodesInPath.pop();
     }
 
-    void setBluetoothInputStream(InputStream inputStream) {
+    public void setBluetoothInputStream(InputStream inputStream) {
         bluetoothInputStream = inputStream;
     }
 
-    InputStream getBluetoothInputStream() {
+    public InputStream getBluetoothInputStream() {
         return bluetoothInputStream;
     }
 
@@ -67,7 +71,7 @@ public class ServicesTerminal {
         isBluetoothRunning.set(bool);
     }
 
-    boolean getIsBluetoothRunning() {
+    public boolean getIsBluetoothRunning() {
         return isBluetoothRunning.get();
     }
 
@@ -75,15 +79,15 @@ public class ServicesTerminal {
         return this.locationHistory.peek();
     }
 
-    void addLocationHistory(String location) {
+    public void addLocationHistory(String location) {
         locationHistory.add(location);
     }
 
-    void setCurrentBearing(float bearing) {
+    public void setCurrentBearing(float bearing) {
         this.currentBearing = bearing;
     }
 
-    float getCurrentBearing() {
+    public float getCurrentBearing() {
         return this.currentBearing;
     }
 
@@ -97,5 +101,13 @@ public class ServicesTerminal {
 
     public boolean isInputStreamProvided() {
         return bluetoothInputStream == null;
+    }
+
+    public Activity getCallerActivity() {
+        return callerActivity;
+    }
+
+    public void setCallerActivity(Activity callerActivity) {
+        this.callerActivity = callerActivity;
     }
 }

@@ -1,4 +1,4 @@
-package com.smartstick.ceg4912.capstoneandroidapp.utility;
+package com.smartstick.ceg4912.capstoneandroidapp.listener;
 
 import android.app.Activity;
 import android.content.Context;
@@ -8,17 +8,26 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 
-import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 
-public class BearingServices implements SensorEventListener {
+import java.util.BitSet;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
+public class BearingListener implements SensorEventListener {
+
+    private final static String TAG = "BearingListener";
 
     private float[] mGravity = new float[3];
     private float[] mGeomagnetic = new float[3];
     private SensorManager sensorManager;
-    private final static String TAG = "BearingServices";
+    private AtomicInteger currentBearing;
 
-    public BearingServices(MainActivity callerAcitivity) {
-        this.sensorManager = (SensorManager) callerAcitivity.getSystemService(Context.SENSOR_SERVICE);
+    public BearingListener() {
+        this.currentBearing = new AtomicInteger(0);
+        this.sensorManager = (SensorManager) ServicesTerminal.getServicesTerminal().getCallerActivity().getSystemService(Context.SENSOR_SERVICE);
     }
 
     public void registerListener() {
@@ -47,6 +56,7 @@ public class BearingServices implements SensorEventListener {
 
             float R[] = new float[9];
             float I[] = new float[9];
+
             boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
             if (success) {
                 float orientation[] = new float[3];
@@ -56,7 +66,7 @@ public class BearingServices implements SensorEventListener {
                 float oldBearing = ServicesTerminal.getServicesTerminal().getCurrentBearing();
                 if (Math.abs(oldBearing - azimuth) > 10) {
                     Log.d(TAG, String.format("oldBearing:%f newBearing:%f", oldBearing, azimuth));
-                    ServicesTerminal.getServicesTerminal().setCurrentBearing(azimuth);
+                    currentBearing.set((int) azimuth);
                 }
             }
         }
@@ -65,5 +75,9 @@ public class BearingServices implements SensorEventListener {
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         Log.d(TAG, String.format("Accuracy changed sensor:%s accuracy:%d", sensor.toString(), accuracy));
+    }
+
+    public int getBearing() {
+        return currentBearing.get();
     }
 }

@@ -8,15 +8,15 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+import com.smartstick.ceg4912.capstoneandroidapp.services.Services;
 
 import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 
-public class BluetoothServices {
+public class BluetoothConnector {
 
-    private static final String TAG = "BluetoothServices";
-    private boolean isConnectedToBluetooth;
+    private static final String TAG = "BluetoothConnector";
     private static BluetoothDevice device;
     private static BluetoothSocket socket;
 
@@ -24,25 +24,25 @@ public class BluetoothServices {
             .fromString("00001101-0000-1000-8000-00805f9b34fb");
     private static final String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
 
-    public static void initializeBluetooth(Activity callerActivity) {
-        checkIfBluetoothCapable(callerActivity);
-        beginBluetoothConnection(callerActivity);
+    public static void initializeBluetooth() {
+        checkIfBluetoothCapable();
+        beginBluetoothConnection();
     }
 
-    private static void checkIfBluetoothCapable(Activity callerActivity) {
+    private static void checkIfBluetoothCapable() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             Log.d(TAG, "Phone does not have Bluetooth adapter");
         } else {
             if (!bluetoothAdapter.isEnabled()) {
                 Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                callerActivity.startActivityForResult(turnBTon, MainActivity.REQUEST_CODE_TURN_BLUETOOTH_ON);
+                ServicesTerminal.getServicesTerminal().getCallerActivity().startActivityForResult(turnBTon, MainActivity.REQUEST_CODE_TURN_BLUETOOTH_ON);
             }
         }
     }
 
-    private static void beginBluetoothConnection(Activity callerActivity) {
-        if (!findArduinoDevice(callerActivity)) {
+    private static void beginBluetoothConnection() {
+        if (!findArduinoDevice()) {
             Log.e(TAG, "Cannot find Arduino device");
             return;
         }
@@ -51,14 +51,14 @@ public class BluetoothServices {
         }
     }
 
-    private static boolean findArduinoDevice(Activity callerActivity) {
+    private static boolean findArduinoDevice() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             return false;
         } else {
             if (!bluetoothAdapter.isEnabled()) {
                 Intent enableAdapter = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                callerActivity.startActivityForResult(enableAdapter, 0);
+                ServicesTerminal.getServicesTerminal().getCallerActivity().startActivityForResult(enableAdapter, 0);
             }
             Set<BluetoothDevice> connectedDevices = bluetoothAdapter.getBondedDevices();
             if (connectedDevices.isEmpty()) {

@@ -1,26 +1,27 @@
-package com.smartstick.ceg4912.capstoneandroidapp.utility;
+package com.smartstick.ceg4912.capstoneandroidapp.services;
 
 import android.util.Log;
+
+import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothConnector;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import javax.net.ssl.SSLEngineResult;
+public class DirectionServices extends Services {
 
-public class ListeningForBluetoothThread extends Thread {
+    private final static String TAG = "DirectionServices";
 
-    private final static String TAG = "ListeningForBluetoothThread";
-    private final DirectionServices directionServices;
-
-    public ListeningForBluetoothThread(DirectionServices directionServices) {
-        this.directionServices = directionServices;
+    public DirectionServices() {
+        BluetoothConnector.initializeBluetooth();
     }
 
     @Override
     public void run() {
         ServicesTerminal servicesTerminal = ServicesTerminal.getServicesTerminal();
         servicesTerminal.setIsBluetoothRunning(true);
-        while (!Thread.currentThread().isInterrupted() && servicesTerminal.getIsBluetoothRunning()) {
+        while (isRunning.get()) {
             try {
                 if (!servicesTerminal.isInputStreamProvided()) {
                     int availableBytes = servicesTerminal.getBluetoothInputStream().available();
@@ -42,7 +43,8 @@ public class ListeningForBluetoothThread extends Thread {
                                         if (servicesTerminal.getLatestLocation().equals(decodeNodeNameToId(servicesTerminal.peekNodesInPath()))) {
                                             servicesTerminal.popNodeInPath();
                                         }
-                                        directionServices.getBearingFromDb(servicesTerminal.getLatestLocation(), servicesTerminal.peekNodesInPath(), String.valueOf(servicesTerminal.getCurrentBearing()));
+                                        BearingRequest bearingRequest = new BearingRequest(servicesTerminal.getLatestLocation(), servicesTerminal.peekNodesInPath(), String.valueOf(servicesTerminal.getCurrentBearing()));
+                                        RequestServices.addBearingRequest(bearingRequest);
                                     }
                                 }
                             }

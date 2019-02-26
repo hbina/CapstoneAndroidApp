@@ -1,6 +1,7 @@
-package com.smartstick.ceg4912.capstoneandroidapp.utility;
+package com.smartstick.ceg4912.capstoneandroidapp.services;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -12,21 +13,20 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
 
 import java.util.Locale;
 
-public class EmergencyServices implements LocationListener {
+public class EmergencyListener implements LocationListener {
 
-    private static final String TAG = "EmergencyServices";
+    private static final String TAG = "EmergencyListener";
     private double latitude;
     private double longitude;
-    private final MainActivity callerActivity;
     private String emergencyNumber;
 
-    public EmergencyServices(MainActivity callerActivity) {
+    public EmergencyListener() {
         this.latitude = 0.0f;
         this.longitude = 0.0f;
-        this.callerActivity = callerActivity;
     }
 
     @Override
@@ -55,13 +55,14 @@ public class EmergencyServices implements LocationListener {
     }
 
     public void sendEmergencySMS() {
+        Activity activity = ServicesTerminal.getServicesTerminal().getCallerActivity();
         Log.d(TAG, String.format("Sending emergency number to emergencyNumber:%s", emergencyNumber));
-        LocationManager locationManager = (LocationManager) callerActivity.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
 
-        if (callerActivity.checkSelfPermission(
+        if (activity.checkSelfPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                callerActivity.checkSelfPermission(
-                        Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED && callerActivity.checkSelfPermission(
+                activity.checkSelfPermission(
+                        Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED && activity.checkSelfPermission(
                 Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
             Location location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
             onLocationChanged(location);
@@ -69,7 +70,7 @@ public class EmergencyServices implements LocationListener {
             if (!TextUtils.isEmpty(emergencyNumber)) {
                 SmsManager smsManager = SmsManager.getDefault();
                 smsManager.sendTextMessage(emergencyNumber, null, googleMapApiCall, null, null);
-                Log.d(TAG, "sending...");
+                Log.d(TAG, "Sending...");
             } else {
                 Log.d(TAG, "Given emergency number is empty");
             }

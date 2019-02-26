@@ -5,19 +5,17 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 
-import com.smartstick.ceg4912.capstoneandroidapp.utility.BearingServices;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothServices;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.DirectionServices;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.EmergencyServices;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.ListeningForBluetoothThread;
+import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
+import com.smartstick.ceg4912.capstoneandroidapp.services.EmergencyListener;
+import com.smartstick.ceg4912.capstoneandroidapp.services.RequestServices;
+import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
+import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommand;
+import com.smartstick.ceg4912.capstoneandroidapp.services.DirectionServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.ServicesTerminal;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.TextToSpeechServices;
-import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommandServices;
 
 import java.util.ArrayList;
 
@@ -38,25 +36,24 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private LISTENING_STATE current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
     private final static int REQ_CODE_SPEECH_OUT = 0;
-    private TextToSpeechServices textToSpeechServices;
-    private DirectionServices directionServices;
-    private VoiceCommandServices voiceCommandServices;
-    private EmergencyServices emergencyServices;
-    private BearingServices bearingServices;
-    private ListeningForBluetoothThread listeningForBluetoothThread;
+    private SpeechServices speechServices;
+    private RequestServices requestServices;
+    private VoiceCommand voiceCommand;
+    private EmergencyListener emergencyListener;
+    private BearingListener bearingListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        BluetoothServices.initializeBluetooth(this);
-        textToSpeechServices = new TextToSpeechServices(this);
-        directionServices = new DirectionServices(this, this.textToSpeechServices);
-        voiceCommandServices = new VoiceCommandServices(this);
-        emergencyServices = new EmergencyServices(this);
-        bearingServices = new BearingServices(this);
-        listeningForBluetoothThread = new ListeningForBluetoothThread(directionServices);
-        listeningForBluetoothThread.start();
+        ServicesTerminal.getServicesTerminal().setCallerActivity(this);
+        speechServices = new SpeechServices();
+        requestServices = new RequestServices();
+        voiceCommand = new VoiceCommand();
+        emergencyListener = new EmergencyListener();
+        bearingListener = new BearingListener();
+        DirectionServices directionServices = new DirectionServices();
+        directionServices.start();
         Log.d(TAG, "Executed thread");
     }
 
@@ -93,24 +90,28 @@ public class MainActivity extends Activity {
                     new String[]{Manifest.permission.BLUETOOTH},
                     4);
         }
-        bearingServices.registerListener();
+
+        speechServices.run();
+        requestServices.run();
+
+        bearingListener.registerListener();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        bearingServices.unregisterListener();
+        bearingListener.unregisterListener();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         ServicesTerminal.getServicesTerminal().setIsBluetoothRunning(false);
-        directionServices.cancelAll();
+        requestServices.cancelAll();
     }
 
     public void onVoice(View v) {
-        voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
+        voiceCommand.openMic(REQ_CODE_SPEECH_OUT);
     }
 
     @Override
@@ -125,20 +126,20 @@ public class MainActivity extends Activity {
                     switch (current_listening_state) {
                         case LISTENING_FOR_COMMANDS: {
                             Log.d(TAG, "Listening for commands");
-                            int command = voiceCommandServices.evaluateCommands(generatedStrings);
+                            int command = voiceCommand.evaluateCommands(generatedStrings);
                             switch (command) {
                                 case 0: {
                                     current_listening_state = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
-                                    voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
+                                    voiceCommand.openMic(REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
                                 case 1: {
                                     current_listening_state = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
-                                    voiceCommandServices.openMic(REQ_CODE_SPEECH_OUT);
+                                    voiceCommand.openMic(REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
                                 case 2: {
-                                    emergencyServices.sendEmergencySMS();
+                                    emergencyListener.sendEmergencySMS();
                                     break;
                                 }
                                 case 3: {
@@ -156,7 +157,7 @@ public class MainActivity extends Activity {
                             Log.d(TAG, "Listening for new direction");
                             // TODO: Replace with actual implementation
                             if (!ServicesTerminal.getServicesTerminal().isLocationHistoryEmpty()) {
-                                directionServices.getDirectionFromDb(ServicesTerminal.getServicesTerminal().getLatestLocation(), voiceCommandServices.evaluateAsPlaces(generatedStrings));
+                                requestServices.getDirectionFromDb(ServicesTerminal.getServicesTerminal().getLatestLocation(), voiceCommand.evaluateAsPlaces(generatedStrings));
                             } else {
                                 Log.d(TAG, "Location history is empty...");
                             }
@@ -165,11 +166,11 @@ public class MainActivity extends Activity {
                         }
                         case LISTENING_FOR_EMERGENCY_NUMBER: {
                             Log.d(TAG, "Listening for emergency number");
-                            String emergencyNumber = voiceCommandServices.evaluateForNumber(generatedStrings);
+                            String emergencyNumber = voiceCommand.evaluateForNumber(generatedStrings);
                             if (emergencyNumber == null) {
-                                textToSpeechServices.logAndForceSpeak("An error have occured. Please try again.");
+                                speechServices.logAndForceSpeak("An error have occured. Please try again.");
                             } else {
-                                emergencyServices.setEmergencyNumber(emergencyNumber);
+                                emergencyListener.setEmergencyNumber(emergencyNumber);
                             }
                             current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             break;
