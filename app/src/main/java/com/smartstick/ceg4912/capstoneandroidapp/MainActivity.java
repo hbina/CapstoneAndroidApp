@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
 
         speechServices = new SpeechServices(this);
         requestServices = new RequestServices(this);
-        directionServices = new DirectionServices();
+        directionServices = new DirectionServices(this);
         bearingListener = new BearingListener(this);
     }
 
@@ -53,33 +53,14 @@ public class MainActivity extends Activity {
         super.onResume();
         // TODO: Perform permission check....if not satisfied, logAndSpeak and request for permission...for every resume.
         if (checkSelfPermission(
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Permission to access fine location is not granted");
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    1);
-
-        }
-        if (checkSelfPermission(
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Permission to access coarse location is not granted");
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                    2);
-        }
-        if (checkSelfPermission(
-                Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Permission to send SMS");
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.SEND_SMS},
-                    3);
-        }
-        if (checkSelfPermission(
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
+                Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
                 Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-            Log.d(TAG, "Permission to use Bluetooth is not granted");
+            Log.d(TAG, "Requesting permissions...");
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.BLUETOOTH},
-                    4);
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS, Manifest.permission.BLUETOOTH},
+                    2);
         }
 
         speechServices.run();
@@ -192,6 +173,10 @@ public class MainActivity extends Activity {
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
         switch (requestCode) {
+            case 0: {
+                Log.d(TAG, "Permission to access Bluetooth have been granted");
+                break;
+            }
             default: {
                 Log.e(TAG, String.format("Returned from requestCode:%d", requestCode));
                 break;

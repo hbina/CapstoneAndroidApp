@@ -17,10 +17,10 @@ public class BearingListener implements SensorEventListener {
     private float[] mGravity = new float[3];
     private float[] mGeomagnetic = new float[3];
     private SensorManager sensorManager;
-    private AtomicInteger currentBearing;
+    private final static AtomicInteger currentBearing = new AtomicInteger(0);
+    ;
 
     public BearingListener(Activity activity) {
-        this.currentBearing = new AtomicInteger(0);
         this.sensorManager = (SensorManager) activity.getSystemService(Context.SENSOR_SERVICE);
     }
 
@@ -70,7 +70,7 @@ public class BearingListener implements SensorEventListener {
         Log.d(TAG, String.format("Accuracy changed sensor:%s accuracy:%d", sensor.toString(), accuracy));
     }
 
-    public int getBearing() {
-        return currentBearing.get();
+    public static String getBearing() {
+        return String.valueOf(currentBearing.get());
     }
 }

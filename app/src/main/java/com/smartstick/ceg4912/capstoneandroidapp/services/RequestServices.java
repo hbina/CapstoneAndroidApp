@@ -18,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -99,13 +100,18 @@ public class RequestServices extends Services {
                     @Override
                     public void onResponse(String response) {
                         try {
-                            JSONObject reader = new JSONObject(response);
-                            JSONArray paths = reader.getJSONArray("Path");
+                            JSONObject jsonObject = new JSONObject(response);
+                            JSONArray jsonArray = jsonObject.getJSONArray("Path");
                             SpeechServices.addText(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", fromNode, toNode));
-                            for (int i = paths.length() - 1; i > 0; i--) {
-                                SpeechServices.addText(paths.getString(i));
-                                // TODO: Add paths somewhere...preferably DirectionServices...
+                            ArrayList<String> nodes = new ArrayList<>();
+                            for (int jsonIter = 0; jsonIter < jsonArray.length(); jsonIter++) {
+                                SpeechServices.addText(jsonArray.getString(jsonIter));
+                                nodes.add(jsonArray.getString(jsonIter));
+                                if (jsonIter < (jsonArray.length() - 1)) {
+                                    SpeechServices.addText("then");
+                                }
                             }
+                            DirectionServices.setNodes(nodes);
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
                         }

@@ -1,26 +1,36 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
+import android.app.Activity;
 import android.util.Log;
 
+import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothConnector;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Stack;
+import java.util.ArrayDeque;
+import java.util.List;
 
 public class DirectionServices extends Services {
 
     private final static String TAG = "DirectionServices";
-    private final static Stack<String> locationHistory = new Stack<>();
+    private static String currentLocation = "";
+    private final static ArrayDeque<String> nodesInPath = new ArrayDeque<>();
 
-    public DirectionServices() {
-        BluetoothConnector.initializeBluetooth();
+    public static void setNodes(List<String> arr) {
+        nodesInPath.clear();
+        nodesInPath.addAll(arr);
+    }
+
+    public DirectionServices(Activity callerActivity) {
+        BluetoothConnector.initializeBluetooth(callerActivity);
     }
 
     @Override
     public void run() {
         super.run();
+        // TODO: Rewrite this...make it a lot simpler than this...
         while (isRunning.get()) {
             try {
                 if (BluetoothConnector.getInputStream() != null) {
@@ -32,27 +42,23 @@ public class DirectionServices extends Services {
                         final String receivedString = (new String(rawBytes, StandardCharsets.UTF_8)).substring(1);
                         if (receivedString.length() > 1) {
                             Log.d(TAG, "receivedString:" + receivedString);
-                            // TODO: Rewrite this...make it a lot simpler than this...
-                            if (locationHistory.isEmpty()) {
-                                locationHistory.add(receivedString);
+                            currentLocation = receivedString;
+                            if (nodesInPath.isEmpty()) {
+                                Log.d(TAG, "Nodes are empty...request a new destination to get a bearing");
                             } else {
-                                if (!locationHistory.peek().equals(receivedString)) {
-                                    locationHistory.add(receivedString);
-                                    if (servicesTerminal.isPathNodesEmpty()) {
-                                        Log.d(TAG, "User have already arrived");
-                                    } else {
-                                        if (servicesTerminal.getLatestLocation().equals(decodeNodeNameToId(servicesTerminal.peekNodesInPath()))) {
-                                            servicesTerminal.popNodeInPath();
-                                        }
-                                        BearingRequest bearingRequest = new BearingRequest(servicesTerminal.getLatestLocation(), servicesTerminal.peekNodesInPath(), String.valueOf(servicesTerminal.getCurrentBearing()));
-                                        RequestServices.addBearingRequest(bearingRequest);
-                                    }
+                                if (!currentLocation.equals(nodesInPath.peekLast())) {
+                                    SpeechServices.addText("You have arrived at " + receivedString);
+                                    nodesInPath.removeLast();
                                 }
+                                BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekLast(), BearingListener.getBearing());
+                                RequestServices.addBearingRequest(bearingRequest);
                             }
                         }
                     }
                 }
-            } catch (IOException exception) {
+
+            } catch (
+                    IOException exception) {
                 Log.e(TAG, exception.getMessage());
             }
         }
@@ -84,6 +90,6 @@ public class DirectionServices extends Services {
     }
 
     public static String getCurrentLocation() {
-        return locationHistory.peek();
+        return currentLocation;
     }
 }

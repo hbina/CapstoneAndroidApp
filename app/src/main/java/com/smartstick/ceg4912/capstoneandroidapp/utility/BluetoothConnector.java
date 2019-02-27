@@ -25,25 +25,25 @@ public class BluetoothConnector {
             .fromString("00001101-0000-1000-8000-00805f9b34fb");
     private static final String DEVICE_ADDRESS = "98:D3:31:FC:27:5D";
 
-    public static void initializeBluetooth() {
-        checkIfBluetoothCapable();
-        beginBluetoothConnection();
+    public static void initializeBluetooth(Activity callerActivity) {
+        checkIfBluetoothCapable(callerActivity);
+        beginBluetoothConnection(callerActivity);
     }
 
-    private static void checkIfBluetoothCapable() {
+    private static void checkIfBluetoothCapable(Activity callerActivity) {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             Log.d(TAG, "Phone does not have Bluetooth adapter");
         } else {
             if (!bluetoothAdapter.isEnabled()) {
                 Intent turnBTon = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                ServicesTerminal.getServicesTerminal().getCallerActivity().startActivityForResult(turnBTon, MainActivity.REQUEST_CODE_TURN_BLUETOOTH_ON);
+                callerActivity.startActivityForResult(turnBTon, 0);
             }
         }
     }
 
-    private static void beginBluetoothConnection() {
-        if (!findArduinoDevice()) {
+    private static void beginBluetoothConnection(Activity callerActivity) {
+        if (!findArduinoDevice(callerActivity)) {
             Log.e(TAG, "Cannot find Arduino device");
             return;
         }
@@ -52,14 +52,14 @@ public class BluetoothConnector {
         }
     }
 
-    private static boolean findArduinoDevice() {
+    private static boolean findArduinoDevice(Activity callerActivity) {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) {
             return false;
         } else {
             if (!bluetoothAdapter.isEnabled()) {
                 Intent enableAdapter = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                ServicesTerminal.getServicesTerminal().getCallerActivity().startActivityForResult(enableAdapter, 0);
+                callerActivity.startActivityForResult(enableAdapter, 0);
             }
             Set<BluetoothDevice> connectedDevices = bluetoothAdapter.getBondedDevices();
             if (connectedDevices.isEmpty()) {
