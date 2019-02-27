@@ -12,9 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.List;
 
-public class DirectionServices extends Services {
+public class RfidServices extends Services {
 
-    private final static String TAG = "DirectionServices";
+    private final static String TAG = "RfidServices";
     private static String currentLocation = "";
     private final static ArrayDeque<String> nodesInPath = new ArrayDeque<>();
 
@@ -23,7 +23,7 @@ public class DirectionServices extends Services {
         nodesInPath.addAll(arr);
     }
 
-    public DirectionServices(Activity callerActivity) {
+    public RfidServices(Activity callerActivity) {
         BluetoothConnector.initializeBluetooth(callerActivity);
     }
 

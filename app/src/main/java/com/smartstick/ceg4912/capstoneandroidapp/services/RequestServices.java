@@ -1,6 +1,5 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
-import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
@@ -10,7 +9,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
 
@@ -111,7 +109,7 @@ public class RequestServices extends Services {
                                     SpeechServices.addText("then");
                                 }
                             }
-                            DirectionServices.setNodes(nodes);
+                            RfidServices.setNodes(nodes);
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
                         }

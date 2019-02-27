@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Services extends Thread {
     final AtomicBoolean isRunning = new AtomicBoolean(true);
 
-    public void killThread() {
+    public void killService() {
         isRunning.set(false);
     }
 }

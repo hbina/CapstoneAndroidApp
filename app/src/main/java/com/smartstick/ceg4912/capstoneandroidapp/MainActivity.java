@@ -15,7 +15,7 @@ import com.smartstick.ceg4912.capstoneandroidapp.services.RequestServices;
 import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.EmergencyHelp;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommand;
-import com.smartstick.ceg4912.capstoneandroidapp.services.DirectionServices;
+import com.smartstick.ceg4912.capstoneandroidapp.services.RfidServices;
 
 import java.util.ArrayList;
 
@@ -30,12 +30,12 @@ public class MainActivity extends Activity {
     }
 
     private static final String TAG = "MainActivity";
-    private LISTENING_STATE current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+    private LISTENING_STATE currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
     private final static int REQ_CODE_SPEECH_OUT = 0;
     private SpeechServices speechServices;
     private RequestServices requestServices;
     private BearingListener bearingListener;
-    private DirectionServices directionServices;
+    private RfidServices rfidServices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,8 +44,16 @@ public class MainActivity extends Activity {
 
         speechServices = new SpeechServices(this);
         requestServices = new RequestServices(this);
-        directionServices = new DirectionServices(this);
+        rfidServices = new RfidServices(this);
         bearingListener = new BearingListener(this);
+        VoiceCommand.init();
+
+        Log.d(TAG, "Begin starting services...");
+        speechServices.start();
+        requestServices.start();
+        rfidServices.start();
+        bearingListener.registerListener();
+        Log.d(TAG, "Done starting services...");
     }
 
     @Override
@@ -62,25 +70,17 @@ public class MainActivity extends Activity {
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.SEND_SMS, Manifest.permission.BLUETOOTH},
                     2);
         }
-
-        speechServices.run();
-        requestServices.run();
-        directionServices.run();
-        bearingListener.registerListener();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        speechServices.killThread();
-        requestServices.killThread();
-        directionServices.killThread();
-        bearingListener.unregisterListener();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "Begin killing services...");
+        speechServices.killService();
+        requestServices.killService();
+        rfidServices.killService();
+        bearingListener.unregisterListener();
+        Log.d(TAG, "Done killing services...");
     }
 
     public void onVoice(View v) {
@@ -96,18 +96,17 @@ public class MainActivity extends Activity {
                     ArrayList<String> generatedStrings = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     Log.d(TAG, String.format("generatedString:%s", generatedStrings.toString()));
-                    switch (current_listening_state) {
+                    switch (currentListeningState) {
                         case LISTENING_FOR_COMMANDS: {
-                            Log.d(TAG, "Listening for commands");
                             int command = VoiceCommand.evaluateCommands(generatedStrings);
                             switch (command) {
                                 case 0: {
-                                    current_listening_state = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
+                                    currentListeningState = LISTENING_STATE.LISTENING_FOR_NEW_DIRECTION;
                                     VoiceCommand.openMic(this, REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
                                 case 1: {
-                                    current_listening_state = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
+                                    currentListeningState = LISTENING_STATE.LISTENING_FOR_EMERGENCY_NUMBER;
                                     VoiceCommand.openMic(this, REQ_CODE_SPEECH_OUT);
                                     break;
                                 }
@@ -129,13 +128,13 @@ public class MainActivity extends Activity {
                         case LISTENING_FOR_NEW_DIRECTION: {
                             Log.d(TAG, "Listening for new direction");
                             // TODO: Replace with actual implementation
-                            if (DirectionServices.getCurrentLocation() != null) {
-                                DirectionRequest directionRequest = new DirectionRequest(DirectionServices.getCurrentLocation(), VoiceCommand.evaluateAsPlaces(generatedStrings));
+                            if (RfidServices.getCurrentLocation() != null) {
+                                DirectionRequest directionRequest = new DirectionRequest(RfidServices.getCurrentLocation(), VoiceCommand.evaluateAsPlaces(generatedStrings));
                                 RequestServices.addDirectionRequest(directionRequest);
                             } else {
                                 Log.d(TAG, "Location history is empty...");
                             }
-                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             break;
                         }
                         case LISTENING_FOR_EMERGENCY_NUMBER: {
@@ -146,11 +145,11 @@ public class MainActivity extends Activity {
                             } else {
                                 EmergencyHelp.setEmergencyNumber(emergencyNumber);
                             }
-                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             break;
                         }
                         default: {
-                            current_listening_state = LISTENING_STATE.LISTENING_FOR_COMMANDS;
+                            currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
                             Log.d(TAG, "State machine is broken");
                             break;
                         }
