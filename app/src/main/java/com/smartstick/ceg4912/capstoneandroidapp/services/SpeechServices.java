@@ -30,17 +30,14 @@ public class SpeechServices extends Services {
                     Log.d(TAG, errorStatus);
                 }
             }
+
+
         });
     }
 
     private void logAndSpeak(String toSpeak) {
         Log.d(TAG, toSpeak);
         textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_ADD, null, null);
-    }
-
-    private void logAndForceSpeak(String toSpeak) {
-        Log.d(TAG, toSpeak);
-        textToSpeech.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 
     @Override
@@ -50,6 +47,7 @@ public class SpeechServices extends Services {
                 logAndSpeak(queue.poll());
             }
         }
+        textToSpeech.shutdown();
     }
 
     public static void addText(String string) {

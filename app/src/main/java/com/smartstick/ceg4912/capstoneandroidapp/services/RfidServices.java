@@ -38,9 +38,9 @@ public class RfidServices extends Services {
                     if (availableBytes > 0) {
                         Log.d(TAG, String.format("Received something from Bluetooth of size:%d", availableBytes));
                         byte[] rawBytes = new byte[availableBytes];
-                        final int i = BluetoothConnector.getInputStream().read(rawBytes);
-                        final String receivedString = (new String(rawBytes, StandardCharsets.UTF_8)).substring(1);
-                        if (receivedString.length() > 1) {
+                        final int receivedLength = BluetoothConnector.getInputStream().read(rawBytes);
+                        if (receivedLength > 1) {
+                            final String receivedString = (new String(rawBytes, StandardCharsets.UTF_8)).substring(1);
                             Log.d(TAG, "receivedString:" + receivedString);
                             currentLocation = receivedString;
                             if (nodesInPath.isEmpty()) {

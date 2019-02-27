@@ -7,9 +7,6 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.util.Log;
 
-import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
-import com.smartstick.ceg4912.capstoneandroidapp.services.Services;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;

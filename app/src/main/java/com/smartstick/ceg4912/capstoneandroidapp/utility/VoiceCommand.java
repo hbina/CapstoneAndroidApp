@@ -2,7 +2,6 @@ package com.smartstick.ceg4912.capstoneandroidapp.utility;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
-import android.content.Context;
 import android.content.Intent;
 import android.speech.RecognizerIntent;
 import android.text.TextUtils;

@@ -9,7 +9,6 @@ import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 
-import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.services.RequestServices;
 import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
@@ -23,6 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends Activity {
+    private WorkerThread workerThread;
+
     private enum LISTENING_STATE {
         LISTENING_FOR_COMMANDS,
         LISTENING_FOR_NEW_DIRECTION,
@@ -32,28 +33,13 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private LISTENING_STATE currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
     private final static int REQ_CODE_SPEECH_OUT = 0;
-    private SpeechServices speechServices;
-    private RequestServices requestServices;
-    private BearingListener bearingListener;
-    private RfidServices rfidServices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        speechServices = new SpeechServices(this);
-        requestServices = new RequestServices(this);
-        rfidServices = new RfidServices(this);
-        bearingListener = new BearingListener(this);
-        VoiceCommand.init();
-
-        Log.d(TAG, "Begin starting services...");
-        speechServices.start();
-        requestServices.start();
-        rfidServices.start();
-        bearingListener.registerListener();
-        Log.d(TAG, "Done starting services...");
+        workerThread = new WorkerThread(this);
+        workerThread.start();
     }
 
     @Override
@@ -75,12 +61,7 @@ public class MainActivity extends Activity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "Begin killing services...");
-        speechServices.killService();
-        requestServices.killService();
-        rfidServices.killService();
-        bearingListener.unregisterListener();
-        Log.d(TAG, "Done killing services...");
+        workerThread.killServices();
     }
 
     public void onVoice(View v) {

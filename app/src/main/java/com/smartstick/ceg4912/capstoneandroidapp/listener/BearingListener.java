@@ -14,11 +14,10 @@ public class BearingListener implements SensorEventListener {
 
     private final static String TAG = "BearingListener";
 
-    private float[] mGravity = new float[3];
-    private float[] mGeomagnetic = new float[3];
-    private SensorManager sensorManager;
+    private final float[] mGravity = new float[3];
+    private final float[] mGeomagnetic = new float[3];
+    private final SensorManager sensorManager;
     private final static AtomicInteger currentBearing = new AtomicInteger(0);
-    ;
 
     public BearingListener(Activity activity) {
         this.sensorManager = (SensorManager) activity.getSystemService(Context.SENSOR_SERVICE);
@@ -57,7 +56,7 @@ public class BearingListener implements SensorEventListener {
                 SensorManager.getOrientation(R, orientation);
                 float azimuth = (float) Math.toDegrees(orientation[0]);
                 azimuth = (azimuth + 360) % 360;
-                if (Math.abs(currentBearing.get() - azimuth) > 10) {
+                if (Math.abs(currentBearing.get() - azimuth) > 20) {
                     Log.d(TAG, String.format("oldBearing:%d newBearing:%f", currentBearing.get(), azimuth));
                     currentBearing.set((int) azimuth);
                 }
