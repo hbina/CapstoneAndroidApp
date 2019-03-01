@@ -5,7 +5,7 @@
 #include <SoftwareSerial.h>
 #include <SPI.h>
 #include <MFRC522.h>
-//SoftwareSerial BTserial(6, 7); // RX | TX
+SoftwareSerial BTserial(0, 1); // RX | TX
 
 #define SS_PIN 10
 #define RST_PIN 9
@@ -48,8 +48,7 @@ void loop()
       if (!someBool) {
         return;
       } else {
-        Serial.print("different key of size:");
-        Serial.print(mfrc522.uid.size);
+
         Serial.print("\n");
         for (byte i = 0; i < mfrc522.uid.size + 1; i++)
         {
@@ -57,9 +56,7 @@ void loop()
           Serial.print(key[i], HEX);
           BTserial.print(key[i], HEX);
         }
-        Serial.print(" no.");
-        Serial.print(counter++);
-        Serial.println();
+
 
         for (byte i = 0; i < 6; i++)
         {
