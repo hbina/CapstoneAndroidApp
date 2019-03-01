@@ -1,6 +1,5 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
-import android.app.Activity;
 import android.util.Log;
 
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
@@ -12,8 +11,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.List;
-
-import javax.net.ssl.SSLPeerUnverifiedException;
 
 public class RfidServices extends Services {
 

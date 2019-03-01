@@ -1,6 +1,5 @@
 package com.smartstick.ceg4912.capstoneandroidapp;
 
-import android.app.Activity;
 import android.util.Log;
 
 import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;

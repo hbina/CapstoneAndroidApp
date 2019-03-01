@@ -1,6 +1,5 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.android.volley.Request;
