@@ -118,6 +118,7 @@ public class RequestServices extends Services {
                                 }
                             }
                             RfidServices.setNodes(nodes);
+                            callerActivity.TEXT_VIEW_PATH.setText(nodes.toString());
                             BearingRequest bearingRequest = new BearingRequest(RfidServices.getCurrentLocation(), RfidServices.peekFirst(), BearingListener.getBearing());
                             RequestServices.addBearingRequest(bearingRequest);
                         } catch (JSONException e) {

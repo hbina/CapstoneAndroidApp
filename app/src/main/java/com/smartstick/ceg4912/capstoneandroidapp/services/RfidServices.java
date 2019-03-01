@@ -52,7 +52,6 @@ public class RfidServices extends Services {
                         if (receivedLength > 1) {
                             Log.d(TAG, "receivedString:" + receivedString);
                             currentLocation = receivedString;
-                            callerActivity.TEXT_VIEW_PATH.setText(nodesInPath.toString());
                             if (nodesInPath.isEmpty()) {
                                 SpeechServices.addText("Please enter a destination...");
                             } else if (nodesInPath.size() == 1) {
@@ -70,6 +69,7 @@ public class RfidServices extends Services {
                         } else {
                             Log.d(TAG, "Delta string recevied => " + receivedString);
                         }
+                        callerActivity.TEXT_VIEW_PATH.setText(nodesInPath.toString());
                     }
                 }
 
