@@ -27,6 +27,10 @@ public class RfidServices extends Services {
         BluetoothConnector.initializeBluetooth(callerActivity);
     }
 
+    public static String peekFirst() {
+        return nodesInPath.peekFirst();
+    }
+
     @Override
     public void run() {
         super.run();
@@ -40,17 +44,19 @@ public class RfidServices extends Services {
                         byte[] rawBytes = new byte[availableBytes];
                         final int receivedLength = BluetoothConnector.getInputStream().read(rawBytes);
                         if (receivedLength > 1) {
-                            final String receivedString = (new String(rawBytes, StandardCharsets.UTF_8)).substring(1);
+                            final String receivedString = filterBluetooth((new String(rawBytes, StandardCharsets.UTF_8)));
                             Log.d(TAG, "receivedString:" + receivedString);
                             currentLocation = receivedString;
                             if (nodesInPath.isEmpty()) {
                                 Log.d(TAG, "Nodes are empty...request a new destination to get a bearing");
                             } else {
-                                if (!currentLocation.equals(nodesInPath.peekLast())) {
+                                if (currentLocation.equals(decodeNodeNameToId(nodesInPath.peekFirst()))) {
                                     SpeechServices.addText("You have arrived at " + receivedString);
-                                    nodesInPath.removeLast();
+                                    nodesInPath.removeFirst();
+                                } else {
+                                    Log.d(TAG, String.format("currentLocation:%s peekFirst:%s", currentLocation, nodesInPath.peekFirst()));
                                 }
-                                BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekLast(), BearingListener.getBearing());
+                                BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekFirst(), BearingListener.getBearing());
                                 RequestServices.addBearingRequest(bearingRequest);
                             }
                         }
@@ -87,6 +93,10 @@ public class RfidServices extends Services {
                 return "F3A0A775";
         }
         return null;
+    }
+
+    public static String filterBluetooth(String location) {
+        return location.length() == 8 ? location.substring(1) : location;
     }
 
     public static String getCurrentLocation() {

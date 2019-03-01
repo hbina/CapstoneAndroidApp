@@ -9,16 +9,16 @@ import com.smartstick.ceg4912.capstoneandroidapp.services.RfidServices;
 import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommand;
 
-class WorkerThread extends Thread {
+class ServicesThread extends Thread {
 
     private final SpeechServices speechServices;
     private final RequestServices requestServices;
     private final RfidServices rfidServices;
     private final BearingListener bearingListener;
 
-    private final static String TAG = "WorkerThread";
+    private final static String TAG = "ServicesThread";
 
-    public WorkerThread(Activity callerActivity) {
+    public ServicesThread(Activity callerActivity) {
         speechServices = new SpeechServices(callerActivity);
         requestServices = new RequestServices(callerActivity);
         rfidServices = new RfidServices(callerActivity);
@@ -33,7 +33,7 @@ class WorkerThread extends Thread {
         requestServices.start();
         rfidServices.start();
         bearingListener.registerListener();
-        Log.d(TAG, "Begin spawning services...");
+        Log.d(TAG, "Done spawning services...");
     }
 
     public void killServices() {

@@ -9,6 +9,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
 
@@ -21,6 +22,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static com.smartstick.ceg4912.capstoneandroidapp.services.RfidServices.filterBluetooth;
 
 public class RequestServices extends Services {
 
@@ -38,18 +41,18 @@ public class RequestServices extends Services {
     }
 
     private void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
-        Log.d(this.toString(), String.format("currentRFID:%s nextNode:%s\n", currentRFID, nextNode));
+        Log.d(this.toString(), String.format("BearingRequest from currentRFID:%s to nextNode:%s\n", currentRFID, nextNode));
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_DIRECTION,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
+                        Log.d(TAG, "Received bearing response:" + response);
                         try {
                             JSONObject reader = (new JSONObject(response)).getJSONObject("Navigation");
 
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
-
-                            String toSpeak = String.format(Locale.ENGLISH, "turn %d to get to %s", bearing, direction);
+                            String toSpeak = String.format(Locale.ENGLISH, "turn %d degrees %s to get to %s", bearing, direction, nextNode);
                             Log.d(TAG, toSpeak);
                             SpeechServices.addText(toSpeak);
                         } catch (JSONException e) {
@@ -76,7 +79,7 @@ public class RequestServices extends Services {
                 Map<String, String> params = new HashMap<>();
                 params.put("current", currentRFID);
                 params.put("next", nextNode);
-                params.put("currentBearing", currentBearing);
+                params.put("bearing", currentBearing);
                 return params;
             }
 
@@ -97,12 +100,13 @@ public class RequestServices extends Services {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
+                        Log.d(TAG, "Received direction response:" + response);
                         try {
                             JSONObject jsonObject = new JSONObject(response);
                             JSONArray jsonArray = jsonObject.getJSONArray("Path");
                             SpeechServices.addText(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", fromNode, toNode));
                             ArrayList<String> nodes = new ArrayList<>();
-                            for (int jsonIter = 0; jsonIter < jsonArray.length(); jsonIter++) {
+                            for (int jsonIter = 1; jsonIter < jsonArray.length(); jsonIter++) {
                                 SpeechServices.addText(jsonArray.getString(jsonIter));
                                 nodes.add(jsonArray.getString(jsonIter));
                                 if (jsonIter < (jsonArray.length() - 1)) {
@@ -110,6 +114,8 @@ public class RequestServices extends Services {
                                 }
                             }
                             RfidServices.setNodes(nodes);
+                            BearingRequest bearingRequest = new BearingRequest(RfidServices.getCurrentLocation(), RfidServices.peekFirst(), BearingListener.getBearing());
+                            RequestServices.addBearingRequest(bearingRequest);
                         } catch (JSONException e) {
                             Log.e(this.toString(), e.getMessage());
                         }
@@ -147,11 +153,11 @@ public class RequestServices extends Services {
         while (isRunning.get()) {
             if (!bearingQueue.isEmpty()) {
                 BearingRequest bearingRequest = bearingQueue.poll();
-                getBearingFromDb(bearingRequest.currentRFID, bearingRequest.nextNode, bearingRequest.currentBearing);
+                getBearingFromDb(filterBluetooth(bearingRequest.currentRFID), bearingRequest.nextNode, bearingRequest.currentBearing);
             }
             if (!directionQueue.isEmpty()) {
                 DirectionRequest directionRequest = directionQueue.poll();
-                getDirectionFromDb(directionRequest.fromNode, directionRequest.toNode);
+                getDirectionFromDb(filterBluetooth(directionRequest.fromNode), directionRequest.toNode);
             }
         }
         cancelAll();

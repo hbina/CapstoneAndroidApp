@@ -9,6 +9,8 @@ import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 
+import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
+import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.services.RequestServices;
 import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
@@ -22,7 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
 public class MainActivity extends Activity {
-    private WorkerThread workerThread;
+    private ServicesThread servicesThread;
 
     private enum LISTENING_STATE {
         LISTENING_FOR_COMMANDS,
@@ -38,8 +40,8 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        workerThread = new WorkerThread(this);
-        workerThread.start();
+        servicesThread = new ServicesThread(this);
+        servicesThread.start();
     }
 
     @Override
@@ -61,7 +63,7 @@ public class MainActivity extends Activity {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        workerThread.killServices();
+        servicesThread.killServices();
     }
 
     public void onVoice(View v) {
@@ -77,6 +79,7 @@ public class MainActivity extends Activity {
                     ArrayList<String> generatedStrings = data
                             .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     Log.d(TAG, String.format("generatedString:%s", generatedStrings.toString()));
+                    // TODO: Turn this into command type... with an interace execute()
                     switch (currentListeningState) {
                         case LISTENING_FOR_COMMANDS: {
                             int command = VoiceCommand.evaluateCommands(generatedStrings);
@@ -153,10 +156,6 @@ public class MainActivity extends Activity {
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
         switch (requestCode) {
-            case 0: {
-                Log.d(TAG, "Permission to access Bluetooth have been granted");
-                break;
-            }
             default: {
                 Log.e(TAG, String.format("Returned from requestCode:%d", requestCode));
                 break;
