@@ -1,6 +1,5 @@
 package com.smartstick.ceg4912.capstoneandroidapp.listener;
 
-import android.app.Activity;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -8,6 +7,9 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 
+import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BearingListener implements SensorEventListener {
@@ -18,9 +20,11 @@ public class BearingListener implements SensorEventListener {
     private final float[] mGeomagnetic = new float[3];
     private final SensorManager sensorManager;
     private final static AtomicInteger currentBearing = new AtomicInteger(0);
+    private final MainActivity callerActivity;
 
-    public BearingListener(Activity activity) {
-        this.sensorManager = (SensorManager) activity.getSystemService(Context.SENSOR_SERVICE);
+    public BearingListener(MainActivity callerActivity) {
+        this.callerActivity = callerActivity;
+        this.sensorManager = (SensorManager) callerActivity.getSystemService(Context.SENSOR_SERVICE);
     }
 
     public void registerListener() {
@@ -59,6 +63,7 @@ public class BearingListener implements SensorEventListener {
                 if (Math.abs(currentBearing.get() - azimuth) > 20) {
                     Log.d(TAG, String.format("oldBearing:%d newBearing:%f", currentBearing.get(), azimuth));
                     currentBearing.set((int) azimuth);
+                    callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", currentBearing.get()));
                 }
             }
         }

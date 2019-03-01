@@ -9,6 +9,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
@@ -35,9 +36,11 @@ public class RequestServices extends Services {
     private final static ConcurrentLinkedQueue<DirectionRequest> directionQueue = new ConcurrentLinkedQueue<>();
 
     private final RequestQueue requestQueue;
+    private final MainActivity callerActivity;
 
-    public RequestServices(Context context) {
-        requestQueue = Volley.newRequestQueue(context);
+    public RequestServices(MainActivity callerActivity) {
+        this.callerActivity = callerActivity;
+        requestQueue = Volley.newRequestQueue(callerActivity);
     }
 
     private void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
@@ -52,6 +55,7 @@ public class RequestServices extends Services {
 
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
+                            callerActivity.TEXT_VIEW_DIRECTION.setText(direction);
                             String toSpeak = String.format(Locale.ENGLISH, "turn %d degrees %s to get to %s", bearing, direction, nextNode);
                             Log.d(TAG, toSpeak);
                             SpeechServices.addText(toSpeak);
@@ -104,7 +108,7 @@ public class RequestServices extends Services {
                         try {
                             JSONObject jsonObject = new JSONObject(response);
                             JSONArray jsonArray = jsonObject.getJSONArray("Path");
-                            SpeechServices.addText(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", fromNode, toNode));
+                            SpeechServices.addText(String.format(Locale.ENGLISH, "To get from %s to %s you must go to", RfidServices.encodeIdToName(fromNode), toNode));
                             ArrayList<String> nodes = new ArrayList<>();
                             for (int jsonIter = 1; jsonIter < jsonArray.length(); jsonIter++) {
                                 SpeechServices.addText(jsonArray.getString(jsonIter));

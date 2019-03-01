@@ -3,6 +3,7 @@ package com.smartstick.ceg4912.capstoneandroidapp.services;
 import android.app.Activity;
 import android.util.Log;
 
+import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
 import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothConnector;
@@ -12,18 +13,22 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.List;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
+
 public class RfidServices extends Services {
 
     private final static String TAG = "RfidServices";
     private static String currentLocation = "";
     private final static ArrayDeque<String> nodesInPath = new ArrayDeque<>();
+    private final MainActivity callerActivity;
 
     public static void setNodes(List<String> arr) {
         nodesInPath.clear();
         nodesInPath.addAll(arr);
     }
 
-    public RfidServices(Activity callerActivity) {
+    public RfidServices(MainActivity callerActivity) {
+        this.callerActivity = callerActivity;
         BluetoothConnector.initializeBluetooth(callerActivity);
     }
 
@@ -43,15 +48,18 @@ public class RfidServices extends Services {
                         Log.d(TAG, String.format("Received something from Bluetooth of size:%d", availableBytes));
                         byte[] rawBytes = new byte[availableBytes];
                         final int receivedLength = BluetoothConnector.getInputStream().read(rawBytes);
+                        final String receivedString = filterBluetooth((new String(rawBytes, StandardCharsets.UTF_8)));
                         if (receivedLength > 1) {
-                            final String receivedString = filterBluetooth((new String(rawBytes, StandardCharsets.UTF_8)));
                             Log.d(TAG, "receivedString:" + receivedString);
                             currentLocation = receivedString;
+                            callerActivity.TEXT_VIEW_PATH.setText(nodesInPath.toString());
                             if (nodesInPath.isEmpty()) {
-                                Log.d(TAG, "Nodes are empty...request a new destination to get a bearing");
+                                SpeechServices.addText("Please enter a destination...");
+                            } else if (nodesInPath.size() == 1) {
+                                SpeechServices.addText("Congratulation, you have arrived at " + nodesInPath.poll());
                             } else {
                                 if (currentLocation.equals(decodeNodeNameToId(nodesInPath.peekFirst()))) {
-                                    SpeechServices.addText("You have arrived at " + receivedString);
+                                    SpeechServices.addText("You have arrived at " + encodeIdToName(receivedString));
                                     nodesInPath.removeFirst();
                                 } else {
                                     Log.d(TAG, String.format("currentLocation:%s peekFirst:%s", currentLocation, nodesInPath.peekFirst()));
@@ -59,6 +67,8 @@ public class RfidServices extends Services {
                                 BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekFirst(), BearingListener.getBearing());
                                 RequestServices.addBearingRequest(bearingRequest);
                             }
+                        } else {
+                            Log.d(TAG, "Delta string recevied => " + receivedString);
                         }
                     }
                 }
@@ -73,7 +83,7 @@ public class RfidServices extends Services {
 
 
     // TODO: For the love of God please rework this wonky crud
-    private static String decodeNodeNameToId(String peekNodesInPath) {
+    public static String decodeNodeNameToId(String peekNodesInPath) {
         switch (peekNodesInPath) {
             case "A":
                 return "ADA392FE";
@@ -95,8 +105,38 @@ public class RfidServices extends Services {
         return null;
     }
 
+    public static String encodeIdToName(String peekNodesInPath) {
+        switch (peekNodesInPath) {
+            case "ADA392FE": {
+                return "A";
+            }
+            case "DDA8387E": {
+                return "B";
+            }
+            case "ED8EA9FE": {
+                return "C";
+            }
+            case "BD2091FE": {
+                return "D";
+            }
+            case "8D97357E": {
+                return "E";
+            }
+            case "BDA13A7E": {
+                return "F";
+            }
+            case "C1D1D909": {
+                return "G";
+            }
+            case "F3A0A775": {
+                return "H";
+            }
+        }
+        return null;
+    }
+
     public static String filterBluetooth(String location) {
-        return location.length() == 8 ? location.substring(1) : location;
+        return location.length() == 9 ? location.substring(1) : location;
     }
 
     public static String getCurrentLocation() {

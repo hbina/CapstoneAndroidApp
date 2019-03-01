@@ -8,9 +8,8 @@ import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 
-import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
-import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.services.RequestServices;
 import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
@@ -19,6 +18,7 @@ import com.smartstick.ceg4912.capstoneandroidapp.utility.VoiceCommand;
 import com.smartstick.ceg4912.capstoneandroidapp.services.RfidServices;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -35,6 +35,10 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private LISTENING_STATE currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
     private final static int REQ_CODE_SPEECH_OUT = 0;
+    public final TextView TEXT_VIEW_BEARING = findViewById(R.id.di_content_bearing);
+    public final TextView TEXT_VIEW_PATH = findViewById(R.id.di_content_path);
+    public final TextView TEXT_VIEW_DIRECTION = findViewById(R.id.di_content_direction);
+    public final TextView TEXT_VIEW_EMERGENCY = findViewById(R.id.di_content_emergency_number);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,6 +131,7 @@ public class MainActivity extends Activity {
                             if (emergencyNumber == null) {
                                 SpeechServices.addText("An error have occured. Please try again.");
                             } else {
+                                TEXT_VIEW_EMERGENCY.setText(String.format(Locale.ENGLISH, "Emergency number:%s", emergencyNumber));
                                 EmergencyHelp.setEmergencyNumber(emergencyNumber);
                             }
                             currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;

@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">CapstoneAndroidApp</string>
     <string name="voice">VOICE</string>
+    <string name="direction">Direction:</string>
+    <string name="textview">TextView</string>
+    <string name="path">Path:</string>
+    <string name="debugging_information">Debugging Information</string>
+    <string name="calibrated_bearing">Calibrated Bearing:</string>
+    <string name="emergency_number">EMERGENCY NUMBER</string>
 </resources>

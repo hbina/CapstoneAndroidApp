@@ -5,11 +5,79 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Button
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:onClick="onVoice"
-        android:text="@string/voice"
-        tools:layout_editor_absoluteY="288dp" />
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="28dp">
+
+        <TextView
+            android:id="@+id/di_content_emergency_number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="@string/emergency_number" />
+
+        <TextView
+            android:id="@+id/di_bearing_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal|center_vertical"
+            android:paddingTop="10dp"
+            android:text="@string/calibrated_bearing" />
+
+        <TextView
+            android:id="@+id/di_content_bearing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal|center_vertical"
+            android:text="@string/textview"
+            android:textSize="30sp"
+            android:textStyle="bold|italic" />
+
+        <TextView
+            android:id="@+id/di_path_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal|center_vertical"
+            android:paddingTop="10dp"
+            android:text="@string/path" />
+
+        <TextView
+            android:id="@+id/di_content_path"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/textview"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/di_direction_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal|center_vertical"
+            android:paddingTop="10dp"
+            android:text="@string/direction" />
+
+        <TextView
+            android:id="@+id/di_content_direction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/textview"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:onClick="onVoice"
+            android:text="@string/voice"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="99dp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

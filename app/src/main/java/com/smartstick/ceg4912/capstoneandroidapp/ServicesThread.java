@@ -18,7 +18,7 @@ class ServicesThread extends Thread {
 
     private final static String TAG = "ServicesThread";
 
-    public ServicesThread(Activity callerActivity) {
+    public ServicesThread(MainActivity callerActivity) {
         speechServices = new SpeechServices(callerActivity);
         requestServices = new RequestServices(callerActivity);
         rfidServices = new RfidServices(callerActivity);
