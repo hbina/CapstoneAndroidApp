@@ -15,7 +15,6 @@ public class EmergencyHelp {
     private final static String TAG = "EmergencyHelp";
     private static String emergencyNumber;
 
-    // TODO:Static methods and constructors...
     public static void sendEmergencySMS(Activity activity) {
         Log.d(TAG, String.format("Sending emergency number to emergencyNumber:%s", emergencyNumber));
         LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);

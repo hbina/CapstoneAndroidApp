@@ -55,7 +55,6 @@ public class MainActivity extends Activity {
     @Override
     public void onResume() {
         super.onResume();
-        // TODO: Perform permission check....if not satisfied, logAndSpeak and request for permission...for every resume.
         if (checkSelfPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
                 Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || checkSelfPermission(
@@ -119,7 +118,6 @@ public class MainActivity extends Activity {
                         }
                         case LISTENING_FOR_NEW_DIRECTION: {
                             Log.d(TAG, "Listening for new direction");
-                            // TODO: Replace with actual implementation
                             if (RfidServices.getCurrentLocation() != null) {
                                 DirectionRequest directionRequest = new DirectionRequest(RfidServices.getCurrentLocation(), VoiceCommand.evaluateAsPlaces(generatedStrings));
                                 RequestServices.addDirectionRequest(directionRequest);
