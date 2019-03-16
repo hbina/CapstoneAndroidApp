@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.services.RequestServices;
 import com.smartstick.ceg4912.capstoneandroidapp.services.SpeechServices;
@@ -107,7 +108,7 @@ public class MainActivity extends Activity {
                                     break;
                                 }
                                 case 3: {
-                                    // TODO : Vibrate stuff
+                                    BearingListener.updateOffset();
                                     break;
                                 }
                                 default: {

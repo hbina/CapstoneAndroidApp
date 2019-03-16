@@ -20,6 +20,7 @@ public class BearingListener implements SensorEventListener {
     private final float[] mGeomagnetic = new float[3];
     private final SensorManager sensorManager;
     private final static AtomicInteger currentBearing = new AtomicInteger(0);
+    private final static AtomicInteger azimuthOffset = new AtomicInteger(0);
     private final MainActivity callerActivity;
 
     public BearingListener(MainActivity callerActivity) {
@@ -58,11 +59,12 @@ public class BearingListener implements SensorEventListener {
             if (success) {
                 float orientation[] = new float[3];
                 SensorManager.getOrientation(R, orientation);
-                float azimuth = (float) Math.toDegrees(orientation[0]);
-                azimuth = (azimuth + 360) % 360;
+                int azimuth = (int) Math.toDegrees(orientation[0]);
+                azimuth = (azimuth + azimuthOffset.get()) % 360;
                 if (Math.abs(currentBearing.get() - azimuth) > 20) {
                     Log.d(TAG, String.format("oldBearing:%d newBearing:%f", currentBearing.get(), azimuth));
-                    currentBearing.set((int) azimuth);
+                    currentBearing.set(azimuth);
+
                     callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", currentBearing.get()));
                 }
             }
@@ -76,5 +78,10 @@ public class BearingListener implements SensorEventListener {
 
     public static String getBearing() {
         return String.valueOf(currentBearing.get());
+    }
+
+
+    public static void updateOffset() {
+        azimuthOffset.set(currentBearing.get());
     }
 }
