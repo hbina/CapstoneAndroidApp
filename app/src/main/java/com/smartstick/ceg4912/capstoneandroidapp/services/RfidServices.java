@@ -37,14 +37,14 @@ public class RfidServices extends Services {
     public void run() {
         super.run();
         while (isRunning.get()) {
-                if (BluetoothConnector.getInputStream() != null) {
-                    final String receivedString = getBluetoothData();
-                    if (receivedString != null) {
-                        updateCurrentLocation(receivedString);
-                        handleReceivedString(receivedString);
-                    }
-                    updateTextView();
+            if (BluetoothConnector.getInputStream() != null) {
+                final String receivedString = getBluetoothData();
+                if (receivedString != null) {
+                    updateCurrentLocation(receivedString);
+                    handleReceivedString(receivedString);
                 }
+                updateTextView();
+            }
         }
         Log.d(TAG, "Thread have finished running");
     }
@@ -75,25 +75,25 @@ public class RfidServices extends Services {
     }
 
     private String getBluetoothData() {
-        int availableBytes = 0;
         try {
-            availableBytes = BluetoothConnector.getInputStream().available();
-        } catch (IOException exception) {
-            Log.e(TAG, exception.toString());
-        }
-        if (availableBytes > 0) {
-            Log.d(TAG, String.format("Received something from Bluetooth of size:%d", availableBytes));
-            byte[] rawBytes = new byte[availableBytes];
-            final int receivedLength = BluetoothConnector.getInputStream().read(rawBytes);
-            final String receivedString = filterBluetooth((new String(rawBytes, StandardCharsets.UTF_8)));
-            if (receivedLength > 1) {
-                return receivedString;
+            int availableBytes = BluetoothConnector.getInputStream().available();
+            if (availableBytes > 0) {
+                Log.d(TAG, String.format("Received something from Bluetooth of size:%d", availableBytes));
+                byte[] rawBytes = new byte[availableBytes];
+                final int receivedLength = BluetoothConnector.getInputStream().read(rawBytes);
+                final String receivedString = filterBluetooth((new String(rawBytes, StandardCharsets.UTF_8)));
+                if (receivedLength > 1) {
+                    return receivedString;
+                } else {
+                    return null;
+                }
             } else {
                 return null;
             }
-        } else {
-            return null;
+        } catch (IOException exception) {
+            Log.e(TAG, exception.toString());
         }
+        return null;
     }
 
     // TODO: Rework this messy crud
