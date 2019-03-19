@@ -17,7 +17,8 @@ class ServicesThread extends Thread {
 
     private final static String TAG = "ServicesThread";
 
-    public ServicesThread(MainActivity callerActivity) {
+    //TODO: Use RoomDB or LiteSQL instead...
+    ServicesThread(MainActivity callerActivity) {
         speechServices = new SpeechServices(callerActivity);
         requestServices = new RequestServices(callerActivity);
         rfidServices = new RfidServices(callerActivity);
@@ -35,7 +36,7 @@ class ServicesThread extends Thread {
         Log.d(TAG, "Done spawning services...");
     }
 
-    public void killServices() {
+    void killServices() {
         Log.d(TAG, "Begin killing services...");
         speechServices.killService();
         requestServices.killService();

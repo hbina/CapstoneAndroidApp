@@ -7,7 +7,6 @@ import android.util.Log;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-// TODO: Make this run on its own thread?
 public class SpeechServices extends Services {
 
     private static final String TAG = "SpeechServices";

@@ -38,7 +38,7 @@ public class MainActivity extends Activity {
     public TextView TEXT_VIEW_BEARING;
     public TextView TEXT_VIEW_PATH;
     public TextView TEXT_VIEW_DIRECTION;
-    public TextView TEXT_VIEW_EMERGENCY;
+    private TextView TEXT_VIEW_EMERGENCY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
