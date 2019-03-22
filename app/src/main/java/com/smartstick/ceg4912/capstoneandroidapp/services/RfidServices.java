@@ -44,6 +44,8 @@ public class RfidServices extends Services {
                     handleReceivedString(receivedString);
                 }
                 updateTextView();
+            } else {
+                isRunning.set(false);
             }
         }
         Log.d(TAG, "Thread have finished running");
