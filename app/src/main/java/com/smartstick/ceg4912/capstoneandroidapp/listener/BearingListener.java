@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BearingListener implements SensorEventListener {
 
     private final static String TAG = "BearingListener";
+    private static final int DIFFERENCE_TRESHOLD = 3;
 
     private final float[] mGravity = new float[3];
     private final float[] mGeomagnetic = new float[3];
@@ -59,11 +60,13 @@ public class BearingListener implements SensorEventListener {
             if (success) {
                 float orientation[] = new float[3];
                 SensorManager.getOrientation(R, orientation);
-                float azimuth = (float) Math.toDegrees(orientation[0]);
+                int azimuth = (int) Math.toDegrees(orientation[0]);
                 azimuth = (azimuth + 360) % 360;
-                Log.d(TAG, String.format("oldBearing:%d newBearing:%f", currentBearing.get(), azimuth));
-                currentBearing.set((int) azimuth);
-                callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", currentBearing.get()));
+                if (Math.abs(azimuth - currentBearing.get()) > DIFFERENCE_TRESHOLD) {
+                    Log.d(TAG, String.format("oldBearing:%d newBearing:%d", currentBearing.get(), azimuth));
+                    currentBearing.set((int) azimuth);
+                    callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", currentBearing.get()));
+                }
             }
         }
     }
