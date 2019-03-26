@@ -73,8 +73,8 @@ public class BearingListener implements SensorEventListener {
         Log.d(TAG, String.format("Accuracy changed sensor:%s accuracy:%d", sensor.toString(), accuracy));
     }
 
-    public static String getBearing() {
-        return String.valueOf(currentBearing.get());
+    public static int getBearing() {
+        return (currentBearing.get() + bearingOffset.get()) % 360;
     }
 
     public static void syncBearingOffset() {

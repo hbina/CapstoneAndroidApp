@@ -67,7 +67,7 @@ public class RfidServices extends Services {
             } else {
                 Log.d(TAG, String.format("currentLocation:%s peekFirst:%s", currentLocation, nodesInPath.peekFirst()));
             }
-            BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekFirst(), BearingListener.getBearing());
+            BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekFirst(), String.valueOf(BearingListener.getBearing()));
             RequestServices.addBearingRequest(bearingRequest);
         }
     }
