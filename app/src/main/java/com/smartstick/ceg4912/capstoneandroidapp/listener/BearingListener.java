@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BearingListener implements SensorEventListener {
 
     private final static String TAG = "BearingListener";
-    private static final int DIFFERENCE_TRESHOLD = 3;
+    private static final int ANGLE_DIFFERENCE_THRESHOLD = 3;
 
     private final float[] mGravity = new float[3];
     private final float[] mGeomagnetic = new float[3];
     private final SensorManager sensorManager;
     private final static AtomicInteger currentBearing = new AtomicInteger(0);
-    private final static AtomicInteger bearingOffset = new AtomicInteger(360);
+    private final static AtomicInteger bearingOffset = new AtomicInteger(0);
     private final MainActivity callerActivity;
 
     public BearingListener(MainActivity callerActivity) {
@@ -61,13 +61,9 @@ public class BearingListener implements SensorEventListener {
             if (success) {
                 float orientation[] = new float[3];
                 SensorManager.getOrientation(R, orientation);
-                int azimuth = (int) Math.toDegrees(orientation[0]);
-                azimuth = (azimuth + bearingOffset.get()) % 360;
-                if (Math.abs(azimuth - currentBearing.get()) > DIFFERENCE_TRESHOLD) {
-                    Log.d(TAG, String.format("oldBearing:%d newBearing:%d", currentBearing.get(), azimuth));
-                    currentBearing.set((int) azimuth);
-                    callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", currentBearing.get()));
-                }
+                int obtainedAngle = ((int) Math.toDegrees(orientation[0]) + 360) % 360;
+                currentBearing.set(obtainedAngle);
+                callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", (currentBearing.get() + bearingOffset.get()) % 360));
             }
         }
     }
@@ -82,6 +78,6 @@ public class BearingListener implements SensorEventListener {
     }
 
     public static void syncBearingOffset() {
-        bearingOffset.set(Math.abs(bearingOffset.get() - currentBearing.get()));
+        bearingOffset.set(Math.abs(360 - currentBearing.get()));
     }
 }
