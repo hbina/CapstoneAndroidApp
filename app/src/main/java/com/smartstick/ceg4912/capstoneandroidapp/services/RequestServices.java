@@ -1,6 +1,7 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
 import android.util.Log;
+import android.widget.TextView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -9,6 +10,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+import com.smartstick.ceg4912.capstoneandroidapp.R;
 import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.model.DirectionRequest;
@@ -54,7 +56,7 @@ public class RequestServices extends Services {
 
                             String direction = reader.getString("direction");
                             int bearing = reader.getInt("bearingDestination");
-                            callerActivity.TEXT_VIEW_DIRECTION.setText(direction);
+                            ((TextView) callerActivity.findViewById(R.id.di_content_direction)).setText(direction);
                             String toSpeak = String.format(Locale.ENGLISH, "turn %d degrees %s to get to %s", bearing, direction, nextNode);
                             Log.d(TAG, toSpeak);
                             SpeechServices.addText(toSpeak);
@@ -117,7 +119,7 @@ public class RequestServices extends Services {
                                 }
                             }
                             RfidServices.setNodes(nodes);
-                            callerActivity.TEXT_VIEW_PATH.setText(nodes.toString());
+                            ((TextView) callerActivity.findViewById(R.id.di_content_path)).setText(nodes.toString());
                             BearingRequest bearingRequest = new BearingRequest(RfidServices.getCurrentLocation(), RfidServices.peekFirst(), String.valueOf(BearingListener.getBearing()));
                             RequestServices.addBearingRequest(bearingRequest);
                         } catch (JSONException e) {
@@ -153,7 +155,6 @@ public class RequestServices extends Services {
 
     @Override
     public void run() {
-        super.run();
         while (isRunning.get()) {
             if (!bearingQueue.isEmpty()) {
                 BearingRequest bearingRequest = bearingQueue.poll();

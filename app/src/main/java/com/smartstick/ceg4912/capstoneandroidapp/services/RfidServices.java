@@ -1,8 +1,10 @@
 package com.smartstick.ceg4912.capstoneandroidapp.services;
 
 import android.util.Log;
+import android.widget.TextView;
 
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+import com.smartstick.ceg4912.capstoneandroidapp.R;
 import com.smartstick.ceg4912.capstoneandroidapp.listener.BearingListener;
 import com.smartstick.ceg4912.capstoneandroidapp.model.BearingRequest;
 import com.smartstick.ceg4912.capstoneandroidapp.utility.BluetoothConnector;
@@ -19,9 +21,10 @@ public class RfidServices extends Services {
     private final static ArrayDeque<String> nodesInPath = new ArrayDeque<>();
     private final MainActivity callerActivity;
 
-    static void setNodes(List<String> arr) {
+    static void setNodes(List<String> nodes) {
+        Log.d(TAG, "nodes:" + nodes.toString());
         nodesInPath.clear();
-        nodesInPath.addAll(arr);
+        nodesInPath.addAll(nodes);
     }
 
     public RfidServices(MainActivity callerActivity) {
@@ -35,15 +38,19 @@ public class RfidServices extends Services {
 
     @Override
     public void run() {
-        super.run();
         while (isRunning.get()) {
             if (BluetoothConnector.getInputStream() != null) {
-                final String receivedString = getBluetoothData();
+                String receivedString = getBluetoothData();
                 if (receivedString != null) {
+                    Log.d(TAG, "receivedStrng:" + receivedString + " length:" + receivedString.length());
+                    if (receivedString.length() == 10) {
+                        receivedString = receivedString.substring(2);
+                        Log.d(TAG, "after receivedStrng:" + receivedString);
+                    }
                     updateCurrentLocation(receivedString);
                     handleReceivedString(receivedString);
                 }
-                updateTextView();
+                //  updateTextView();
             } else {
                 isRunning.set(false);
             }
@@ -52,7 +59,7 @@ public class RfidServices extends Services {
     }
 
     private void updateTextView() {
-        callerActivity.TEXT_VIEW_PATH.setText(nodesInPath.toString());
+        ((TextView) callerActivity.findViewById(R.id.di_content_path)).setText(nodesInPath.toString());
     }
 
     private void handleReceivedString(String receivedString) {
@@ -79,8 +86,7 @@ public class RfidServices extends Services {
     private String getBluetoothData() {
         try {
             int availableBytes = BluetoothConnector.getInputStream().available();
-            if (availableBytes > 0) {
-                Log.d(TAG, String.format("Received something from Bluetooth of size:%d", availableBytes));
+            if (availableBytes > 7) {
                 byte[] rawBytes = new byte[availableBytes];
                 final int receivedLength = BluetoothConnector.getInputStream().read(rawBytes);
                 final String receivedString = filterBluetooth((new String(rawBytes, StandardCharsets.UTF_8)));

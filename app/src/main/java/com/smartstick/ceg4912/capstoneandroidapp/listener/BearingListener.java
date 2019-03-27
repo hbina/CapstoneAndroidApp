@@ -6,11 +6,15 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.smartstick.ceg4912.capstoneandroidapp.MainActivity;
+import com.smartstick.ceg4912.capstoneandroidapp.R;
 
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.smartstick.ceg4912.capstoneandroidapp.R.*;
 
 // TODO: Correct bearing stuff...
 public class BearingListener implements SensorEventListener {
@@ -63,7 +67,7 @@ public class BearingListener implements SensorEventListener {
                 SensorManager.getOrientation(R, orientation);
                 int obtainedAngle = ((int) Math.toDegrees(orientation[0]) + 360) % 360;
                 currentBearing.set(obtainedAngle);
-                callerActivity.TEXT_VIEW_BEARING.setText(String.format(Locale.ENGLISH, "Bearing:%d", (currentBearing.get() + bearingOffset.get()) % 360));
+                ((TextView) callerActivity.findViewById(id.di_content_bearing)).setText(String.format(Locale.ENGLISH, "Bearing:%d", (currentBearing.get() + bearingOffset.get()) % 360));
             }
         }
     }
