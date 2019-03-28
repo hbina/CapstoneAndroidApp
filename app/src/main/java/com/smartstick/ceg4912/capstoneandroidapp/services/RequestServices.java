@@ -45,7 +45,7 @@ public class RequestServices extends Services {
     }
 
     private void getBearingFromDb(final String currentRFID, final String nextNode, final String currentBearing) {
-        Log.d(this.toString(), String.format("BearingRequest from currentRFID:%s to nextNode:%s\n", currentRFID, nextNode));
+        Log.d(this.toString(), String.format("BearingRequest from currentRFID:%s to nextNode:%s with bearing:%s\n", currentRFID, nextNode, currentBearing));
         StringRequest jsonObjRequest = new StringRequest(Request.Method.POST, SMART_STICK_URL_DIRECTION,
                 new Response.Listener<String>() {
                     @Override
@@ -54,10 +54,22 @@ public class RequestServices extends Services {
                         try {
                             JSONObject reader = (new JSONObject(response)).getJSONObject("Navigation");
 
-                            String direction = reader.getString("direction");
-                            int bearing = reader.getInt("bearingDestination");
-                            ((TextView) callerActivity.findViewById(R.id.di_content_direction)).setText(direction);
+                            final String direction = reader.getString("direction");
+                            final int bearing = reader.getInt("bearingDestination");
+                            final int steps = reader.getInt("steps");
+                            final String directionString = direction + " " + bearing + "° " + String.valueOf(steps);
+                            callerActivity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    ((TextView) callerActivity.findViewById(R.id.di_content_direction)).setText(directionString);
+                                }
+                            });
                             String toSpeak = String.format(Locale.ENGLISH, "turn %d degrees %s to get to %s", bearing, direction, nextNode);
+                            if (steps > 0) {
+                                toSpeak += " going up " + steps + " steps";
+                            } else if (steps < 0) {
+                                toSpeak += " going down " + -steps + " steps";
+                            }
                             Log.d(TAG, toSpeak);
                             SpeechServices.addText(toSpeak);
                         } catch (JSONException e) {
@@ -119,7 +131,13 @@ public class RequestServices extends Services {
                                 }
                             }
                             RfidServices.setNodes(nodes);
-                            ((TextView) callerActivity.findViewById(R.id.di_content_path)).setText(nodes.toString());
+                            final String nodesName = nodes.toString();
+                            callerActivity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    ((TextView) callerActivity.findViewById(R.id.di_content_path)).setText(nodesName);
+                                }
+                            });
                             BearingRequest bearingRequest = new BearingRequest(RfidServices.getCurrentLocation(), RfidServices.peekFirst(), String.valueOf(BearingListener.getBearing()));
                             RequestServices.addBearingRequest(bearingRequest);
                         } catch (JSONException e) {

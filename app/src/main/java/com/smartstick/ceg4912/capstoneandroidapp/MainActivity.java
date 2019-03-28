@@ -37,22 +37,10 @@ public class MainActivity extends Activity {
     private LISTENING_STATE currentListeningState = LISTENING_STATE.LISTENING_FOR_COMMANDS;
     private final static int REQ_CODE_SPEECH_OUT = 0;
 
-    /**
-     * public TextView TEXT_VIEW_BEARING;
-     * public TextView TEXT_VIEW_PATH;
-     * public TextView TEXT_VIEW_DIRECTION;
-     * private TextView TEXT_VIEW_EMERGENCY;
-     **/
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        /**
-         TEXT_VIEW_BEARING = findViewById(R.id.di_content_bearing);
-         TEXT_VIEW_PATH = findViewById(R.id.di_content_path);
-         TEXT_VIEW_DIRECTION = findViewById(R.id.di_content_direction);
-         TEXT_VIEW_EMERGENCY = findViewById(R.id.di_content_emergency_number);
-         */
         servicesThread = new ServicesThread(this);
         servicesThread.start();
     }

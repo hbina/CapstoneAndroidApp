@@ -50,7 +50,6 @@ public class RfidServices extends Services {
                     updateCurrentLocation(receivedString);
                     handleReceivedString(receivedString);
                 }
-                //  updateTextView();
             } else {
                 isRunning.set(false);
             }
@@ -65,7 +64,9 @@ public class RfidServices extends Services {
     private void handleReceivedString(String receivedString) {
         if (nodesInPath.isEmpty()) {
             SpeechServices.addText("Please enter a destination...");
-        } else if (nodesInPath.size() == 1) {
+            return;
+        }
+        if (nodesInPath.size() == 1) {
             SpeechServices.addText("Congratulation, you have arrived at " + nodesInPath.poll());
         } else {
             if (currentLocation.equals(decodeNodeNameToId(nodesInPath.peekFirst()))) {
@@ -77,6 +78,12 @@ public class RfidServices extends Services {
             BearingRequest bearingRequest = new BearingRequest(currentLocation, nodesInPath.peekFirst(), String.valueOf(BearingListener.getBearing()));
             RequestServices.addBearingRequest(bearingRequest);
         }
+        callerActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateTextView();
+            }
+        });
     }
 
     private void updateCurrentLocation(String receivedString) {
@@ -123,6 +130,18 @@ public class RfidServices extends Services {
                 return "C1D1D909";
             case "H":
                 return "F3A0A775";
+            case "H2": {
+                return "49D74C9A";
+            }
+            case "I": {
+                return "43D1BD75";
+            }
+            case "J": {
+                return "B4B01FA3";
+            }
+            case "K": {
+                return "F0F875A4";
+            }
         }
         return null;
     }
@@ -152,6 +171,18 @@ public class RfidServices extends Services {
             }
             case "F3A0A775": {
                 return "H";
+            }
+            case "49D74C9A": {
+                return "H2";
+            }
+            case "43D1BD75": {
+                return "I";
+            }
+            case "B4B01FA3": {
+                return "J";
+            }
+            case "F0F875A4": {
+                return "K";
             }
         }
         return null;

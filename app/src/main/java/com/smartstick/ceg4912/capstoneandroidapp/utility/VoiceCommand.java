@@ -22,7 +22,7 @@ public class VoiceCommand {
             "Set direction",
             "Set emergency number",
             "Send help",
-            "Sync"
+            "Calibrate"
     };
 
     public static void init() {
