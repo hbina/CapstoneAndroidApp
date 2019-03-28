@@ -57,14 +57,15 @@ public class RequestServices extends Services {
                             final String direction = reader.getString("direction");
                             final int bearing = reader.getInt("bearingDestination");
                             final int steps = reader.getInt("steps");
-                            final String directionString = direction + " " + bearing + "° " + String.valueOf(steps);
+                            final int distance = reader.getInt("distance");
+                            final String directionString = direction + " " + bearing + "° " + String.valueOf(steps) + " " + distance;
                             callerActivity.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
                                     ((TextView) callerActivity.findViewById(R.id.di_content_direction)).setText(directionString);
                                 }
                             });
-                            String toSpeak = String.format(Locale.ENGLISH, "turn %d degrees %s to get to %s", bearing, direction, nextNode);
+                            String toSpeak = String.format(Locale.ENGLISH, "turn %d degrees %s and walk %d metre to get to %s", bearing, direction, distance, nextNode);
                             if (steps > 0) {
                                 toSpeak += " going up " + steps + " steps";
                             } else if (steps < 0) {
