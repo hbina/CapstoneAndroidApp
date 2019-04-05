@@ -69,7 +69,14 @@
             android:text="@string/textview"
             android:textSize="30sp"
             android:textStyle="bold" />
-
+        <TextView
+            android:id="@+id/di_current_path"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/textview"
+            android:textSize="30sp"
+            android:textStyle="bold" />
         <Button
             android:layout_width="match_parent"
             android:layout_height="match_parent"

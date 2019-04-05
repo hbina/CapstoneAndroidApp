@@ -59,6 +59,7 @@ public class RfidServices extends Services {
 
     private void updateTextView() {
         ((TextView) callerActivity.findViewById(R.id.di_content_path)).setText(nodesInPath.toString());
+        ((TextView) callerActivity.findViewById(R.id.di_current_path)).setText(currentLocation);
     }
 
     private void handleReceivedString(String receivedString) {
